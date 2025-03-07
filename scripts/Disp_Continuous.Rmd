@@ -1,0 +1,83 @@
+---
+title: "Disp_Continuous"
+author: "Brandie QC"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Dispersal across distance (continuous)
+
+## Libraries and functions 
+```{r}
+library(tidyverse)
+
+sem <- function(x, na.rm=FALSE) {           #for caclulating standard error
+  sd(x,na.rm=na.rm)/sqrt(length(na.omit(x)))
+} 
+```
+
+## Load estimated plant n across distance 
+```{r}
+disp_dist <- read_csv("../input/DispKernelR.csv")
+```
+
+## Means and Figure
+```{r}
+disp_dist_means <- disp_dist %>% 
+  group_by(DistanceMeters) %>% 
+  summarise(meanDisp=mean(PlantN, na.rm=TRUE), semDisp=sem(PlantN, na.rm = TRUE))
+
+disp_dist_means %>% 
+  ggplot(aes(x=DistanceMeters, y=meanDisp)) +
+  geom_point(size=6) + 
+  #geom_errorbar(aes(ymin=meanDisp-semDisp,ymax=meanDisp+semDisp),width=.02, linewidth = 2) +
+  theme_classic() + 
+  labs(y="Estimated Plant Number", x="Distance from Source Tray (m)") #+
+ # theme(text=element_text(size=30))
+```
+
+### Round distances
+```{r}
+disp_dist_means_round <- disp_dist %>% 
+  mutate(roundDist=round(DistanceMeters, digits=1)) %>% 
+  group_by(roundDist) %>% 
+  summarise(meanDisp=mean(PlantN, na.rm=TRUE), semDisp=sem(PlantN, na.rm = TRUE), n=n()) %>% 
+  filter(!is.na(semDisp)) #only keep distances with multiple data points 
+
+disp_dist_means_round %>% 
+  ggplot(aes(x=roundDist, y=meanDisp)) +
+  geom_point(size=4) + 
+ # geom_smooth() +
+  geom_errorbar(aes(ymin=meanDisp-semDisp,ymax=meanDisp+semDisp),width=.02, linewidth = 2) +
+  theme_classic() + 
+  labs(y="Estimated Plant Number", x="Distance from Source Tray (m)") #+
+ # theme(text=element_text(size=30))
+```
+
+## Binned distances
+```{r}
+summary(disp_dist)
+disp_dist_means_bins <- disp_dist %>% 
+  mutate(Distbins=if_else(DistanceMeters<=0.3239, "Bin_1",
+                          if_else(DistanceMeters<=0.9132, "Bin_2",
+                          if_else(DistanceMeters<=1.2319, "Bin_3", "Bin_4")))) %>% 
+  group_by(Distbins) %>% 
+  summarise(meanDisp=mean(PlantN, na.rm=TRUE), semDisp=sem(PlantN, na.rm = TRUE), n=n()) 
+disp_dist_means_bins
+
+disp_dist_means_bins %>% 
+  ggplot(aes(x=Distbins, y=meanDisp)) +
+  geom_point(size=4) + 
+  geom_errorbar(aes(ymin=meanDisp-semDisp,ymax=meanDisp+semDisp),width=.02, linewidth = 2) +
+  theme_classic() + 
+  scale_x_discrete(labels=c("Bin_1" = "0.19-0.32 m", "Bin_2" = "0.33-0.91 m",
+                              "Bin_3" = "0.92-1.23 m", "Bin_4" = "1.24-2.05 m")) +
+  labs(y="Estimated Plant Number", x="Distance from Source Tray (m)") +
+ theme(text=element_text(size=30))
+ggsave("../output/SeedN_Dist_ContBins.png", width = 12, height = 8, units = "in")
+```
+
