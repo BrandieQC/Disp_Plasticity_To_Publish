@@ -1,0 +1,283 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Code from Clark et al. 1999, modified by Carol Horovitz and BQC
+
+#Libraries and contingencies 
+```{r}
+library(tidyverse)
+library(ggpubr)
+```
+
+#Functions
+```{r}
+#function 1# the gaussian######################
+####negative binomial with a gaussian overdispersed sampling distribution
+lognorm  <- function(param){
+  print(param)
+  mu     <- getmean(param)
+  theta  <- param[3]
+  lgn    <- lgamma(counts + theta) #negative binomial on a log scale
+  lgd    <- lgamma(counts+1) + lgamma(theta)
+  piece1 <- counts*log(mu) + theta*log(theta) - (theta + counts)*log(mu + theta)
+  return(-sum(lgn - lgd + piece1))
+}
+
+#function 2 # getmean for the Gaussian#######
+getmean <- function(param){
+  #pi   <- 3.14159 # in r pi is a number 
+  beta <- param[1] # number of offspring/signal strength unit 
+  sig  <- param[2] #sig = alpha = distance parameter in meters 
+  
+  #from Brian's code adapted by Carol to replace error lines
+  x1<- beta*bas	# converting signal strength from sources to arrival seedlings in traps 
+  x2<- exp(-(dist/sig)^2)/(pi*(sig)^2) 
+  #see equation 5b, p. 1478 Clark et al. 1999, 'sig' here plays role of 'alpha'
+  return(x2%*%x1)
+}
+
+
+######function 4 ##### 2dt model  plays same role as Weibull in Janneke code########
+loglik <- function(param){
+  print(param)
+  mu  <- getmean1(param)
+  #  Poisson likelihood:
+  piece1 <- -mu + counts*log(mu) - lgamma(counts + 1)
+  return(-sum(piece1))
+}
+
+
+#function 5 getmean for the 2dt############### same role as getmean for Weibull#####
+getmean1 <- function(param0){
+  #pi   <- 3.14159
+  beta <- param0[1]
+  lpar <- param0[2]
+  #x11  <- bas*lpar
+  x_11  <- bas*lpar
+  #x11_matrix(x11,nrow=length(dist[,1]), ncol=length(bas), byrow=T)  
+  x_11 <-matrix(x_11,nrow=length(dist[,1]), ncol=length(bas), byrow=T)   
+  #Janneke's fix, not elegant but it works
+  x12  <-  pi* (lpar+ dist^2)^2
+  x13  <- x_11/x12
+  x2   <- apply(x13,1,sum)
+  return(x2*beta)
+}
+
+
+######function 6 2dtgrid (no analogue in Janneke code) used for mapping#############
+shad2 <- function(param){
+  beta <- param[1]
+  upar <- param[2] #lam in  code above
+  sh1  <- beta * upar
+  sh2  <- 3.14159*(upar+dis^2)^2
+  return(sh1/sh2)
+}
+```
+
+#Import the data
+```{r}
+#setwd("~/Documents/Duke/Lab/Dispersal Trays/Horvitz Dispersal Kernel Method")
+#seedling data = trap/target data 
+sdlgdat<-read.csv("../input/BQsdlgdat.csv",header=T)
+sdlgdat
+b<-sdlgdat 
+xtrap<-b$x #x coordinates between traps
+ytrap<-b$y #y coordinates between traps 
+counts<-b$athaliana #seedling number per trap
+
+#tree data = source data 
+treedat<-read.csv("../input/BQtreedat.csv",header=T)
+c<-treedat   
+xtree<-c$X #x coordinates between sources
+ytree<-c$Y #y coordinates between sources 
+bas<-c$ar03.2 #estimated reproductive output of sources 
+bas
+```
+
+#Calculate data from observed values
+```{r}
+#calculate distance matrix
+xd       <- outer(xtree,xtrap,function(xtree,xtrap) (xtree - xtrap)^2)
+yd       <- outer(ytree,ytrap,function(ytree,ytrap) (ytree - ytrap)^2)
+dist     <- t(sqrt(xd + yd)) # the matrix of traps by source distances
+#distance is in meters 
+
+dim(dist) #check the matrix, 28 rows (traps) x 12 columns (sources)
+max(dist) #13.19
+
+#mean tree size/for BQ mean population fitness
+#Note: This is estimated total reproductive output (Avg Fruit # * Pop Size)
+meantree <- mean(bas) 
+# > meantree
+# [1] 2066.47
+
+#> meantree
+#[1] 8265.878 -with 4*estimated total (PF = 1/4 of pop)
+
+#calcualte mean distance between all offspring and sources
+countscol<-matrix(counts,28,1)
+fivecol<-cbind(countscol,countscol,countscol,countscol,countscol)
+allcol<-cbind(fivecol,fivecol,countscol,countscol)
+wtdist<-dist*allcol
+meandistsdlg<-sum(wtdist)/(sum(counts)*12) #N=totcounts*adults
+# > meandistsdlg
+# [1] 5.505712
+```
+
+#Fit Gaussian model
+```{r}
+#Gaussian fit
+beta0    <- 0.5 #going from fruits to seeds to seedlings (with trees they go from basal area --> seeds --> seedlings)
+#estimated seeds/fruit in DND = 29 so rounded up to 30 and divided by 2 
+s0       <- 7. #should be a little higher than the meandistsdlg
+theta0   <- 0.8 #shape parameter (<1 = overdispersed, >1 =poisson)
+param0   <- c(beta0,s0,theta0)
+outg     <- nlminb(param0,lognorm,lower = c(.0001,.2,.1),upper = c(30,60,100))
+#outg     <- nlminb(param0,lognorm,lower = c(.0001,.2,.1),upper = c(1,60,100))
+#nlminb() takes a function, objective, and finds values for the parameters of this function at which the objective function achieves its minimum value.
+#lower and uppers = parameter constraints during the estimation process 
+beta     <- outg$par[1] #converting bas to seedlings    
+alpha    <- outg$par[2] #see equation 5b, p. 1478 Clark et al. 1999
+theta    <- outg$par[3] #clummping parameter 
+
+#calculate model fit 
+likg<-outg$objective
+aicg<-2*(likg + 3)
+aicg
+
+meandisplace<-alpha*(sqrt(pi)/2) # convert alpha to mean displacement per unit time
+
+predg<-getmean(c(beta,alpha))  #predicted distribution by Gaussian of seedlings in traps
+rg<-cor(predg,counts)          # correlation coefficient
+
+minpredg<-min(predg)   #min predicted 
+minpredg
+maxpredg<-max(predg)   #max predicted
+maxpredg
+mincounts<-min(counts) #min observed
+mincounts
+maxcounts<-max(counts) #max observed
+maxcounts
+meancounts<-mean(counts) #mean observed
+
+guassfit <- data.frame(counts, predg)
+cor.test(guassfit$counts, guassfit$predg)
+#r = 0.1664029 ; p = 0.3974
+ggplot(guassfit, aes(x=counts, y=predg)) + geom_point() + ylab("Predicted # of Seedlings") +
+  xlab("Observed # of Seedlings") + ggtitle("Guassian Fit") + theme_classic()
+```
+
+#Fit 2dt model
+```{r}
+#2Dt model
+lam0     <- 2 #new distance parameter added to 2dt model (allows alpha to vary)
+param0   <- c(beta0,lam0)
+outt     <- nlminb(param0,loglik,lower = c(0.0001,.05),upper = c(30,3600))
+#outt     <- nlminb(param0,loglik,lower = c(.0001,.05),upper = c(1,3600))
+b0       <- outt$par[1] #not initials even though called b0,u0
+u0       <- outt$par[2]
+
+#calculate model fit 
+lik2<-outt$objective
+aic2<-2*(lik2+2)
+aic2
+
+pred2<-getmean1(c(b0,u0))        #predicted distribution by twodt of seedlings in traps
+rtwo<-cor(pred2,counts)          #correlation coefficient
+minpred2<-min(pred2)   #min predicted 
+minpred2
+maxpred2<-max(pred2)   #max predicted
+maxpred2
+mincounts<-min(counts) #min observed
+mincounts
+maxcounts<-max(counts) #max observed
+maxcounts
+meancounts<-mean(counts) #mean observed
+
+twodtfit <- data.frame(counts, pred2)
+cor.test(twodtfit$counts, twodtfit$pred2)
+#r = 0.3823564 ; p= 0.04464
+ggplot(twodtfit, aes(x=counts, y=pred2)) + geom_point() + ylab("Predicted # of Seedlings") +
+  xlab("Observed # of Seedlings") + ggtitle("2dt Fit") + theme_classic()
+```
+
+#Graph dispersal kernels
+```{r}
+#for drawing  the kernels for a set vector of distances
+
+distr<-seq(0,5,length=5)            #makes a vector of distances 
+
+shadg<-beta*exp(-(distr/alpha)^2)/(3.14159*alpha^2) #gaussian
+#eqn 5b in Clark et al. 1999 weighted by beta to convert probability density into actual numbers across distance (go from probability to numerical)
+
+shad1       <- b0*u0                                # twodt step 1
+shadden2    <- 3.14159*(u0+distr^2)^2               #  twodt step 2
+shadtwodt   <- shad1/shadden2                       #  twodt step 3
+
+#plot figs
+seedshadows <- data.frame(distr,shadg, shadtwodt) %>% rename(Gaussian=shadg, Twodt=shadtwodt)
+seedshadows_long <- gather(seedshadows, Model, shadow, Gaussian:Twodt)
+AIC_text <- data.frame(
+  label = c("AIC = 325.3", "AIC = 1998.3"),
+  Model= c("Gaussian", "Twodt")
+)
+corr_text  <- data.frame(
+  label = c("r = 0.17", "r = 0.38*"),
+  Model= c("Gaussian", "Twodt")
+)
+
+ggplot(seedshadows_long, aes(x=distr, y=shadow)) + 
+  geom_line(linewidth=1.5) + 
+  labs(y=expression(Density~(plants/m^2)), x="Distance (m)") +
+  theme_classic() + 
+  theme(text=element_text(size=35)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  facet_grid(. ~Model) +
+  geom_text(
+    data=AIC_text,
+    mapping=aes(x=3, y=0.013, label = label),
+    size=12,
+    hjust =-0.1,
+    vjust =-1
+  ) +
+  geom_text(
+    data=corr_text,
+    mapping=aes(x=3.3, y=0.0115, label = label),
+    size=12,
+    hjust =-0.1,
+    vjust =-1
+  )
+ggsave("../output/DispersalKernels_ShortDist2.png", width=18, height=8, units="in")
+```
+
+```{r, eval=FALSE}
+seedshadows_long %>% 
+  filter(Model=="Twodt") %>% 
+  ggplot(aes(x=distr, y=shadow)) + geom_line(size=1.5) + 
+  ylab(expression(Density~(plants/m^2))) +
+  theme_classic() + theme(text=element_text(size=35)) +
+  xlab("Distance (m)")
+ggsave("DispersalKernels_Twodt_ShortDist.png", width=11, height=8, units="in")
+
+###Long Distance
+distr<-seq(0,100,length=100)            #makes a vector of distances 
+
+shadg<-beta*exp(-(distr/alpha)^2)/(3.14159*alpha^2) #gaussian
+#eqn 5b in Clark et al. 1999 weighted by beta to convert probability density into actual numbers across distance (go from probability to numerical)
+
+shad1       <- b0*u0                                # twodt step 1
+shadden2    <- 3.14159*(u0+distr^2)^2               #  twodt step 2
+shadtwodt   <- shad1/shadden2                       #  twodt step 3
+
+#plot figs
+seedshadows <- data.frame(distr,shadg, shadtwodt) %>% rename(Gaussian=shadg, Twodt=shadtwodt)
+seedshadows_long <- gather(seedshadows, Model, shadow, Gaussian:Twodt)
+ggplot(seedshadows_long, aes(x=distr, y=shadow)) + geom_line(size=1.5) + ylab(expression(Density~(plants/m^2))) +
+  theme_classic() + theme(text=element_text(size=30)) +
+  xlab("Distance (m)") + 
+  facet_grid(. ~Model)
+ggsave("DispersalKernels_LongDist2.png", width=22, height=8, units="in")
+```
+

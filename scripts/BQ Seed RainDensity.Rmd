@@ -1,0 +1,112 @@
+---
+title: "Dispersal Trays BQ Seed Rain"
+output: html_notebook
+---
+
+## Libraries and other constants
+```{r}
+library(tidyverse)
+#level_order <- c('Close', 'Far') - no middle 
+#ch1Palette <- c("#298B8A", "#B4A7E1")
+#ch1Palette_source <- c("#E69F00", "#298B8A", "#B4A7E1")
+level_order <- c('Close', 'Middle', 'Far')
+level_order2 <- c('Source','Close', 'Middle', 'Far')
+ch1Palette <- c("#298B8A", "93E9EE","#B4A7E1")
+ch1Palette_source <- c("#E69F00", "#298B8A", "93E9EE","#B4A7E1")
+
+#triplets <- read.csv("Pops_Trt_Triplet.csv")
+#names(triplets)
+```
+
+
+## Load data
+```{r}
+sourcespringpop <- read.csv("../input/SourcePopNY1.csv")
+head(sourcespringpop)
+sourcespringpopy1 <- sourcespringpop %>% filter(CagedTrt=="Open")
+tail(sourcespringpopy1)
+sourcespringpopy1_density <- sourcespringpopy1 %>% mutate(Density=PFTotal/0.2129028, Distance="Source") %>% select(FieldID, Distance, Density)
+head(sourcespringpopy1_density)
+#sourcespringpopy1_density_triplets <- merge(triplets, sourcespringpopy1_density)
+#head(sourcespringpopy1_density_triplets)
+
+dispdensity <- read.csv("../input/DispDensityR.csv")
+head(dispdensity)
+```
+
+## Figure with Middle included 
+```{r}
+dispdensity_bindprep <- dispdensity %>% select(FieldID, Distance, Density)
+dispdensity_source <- rbind(sourcespringpopy1_density, dispdensity_bindprep)
+dispdensity_source
+dispdensity_summary <- dispdensity_source %>% group_by(Distance) %>% filter(!is.na(Density)) %>% summarize(meanDensity=mean(Density), SE = sd(Density)/sqrt(n()))
+dispdensity_summary
+
+dispdensity_summary$Distance <- factor(dispdensity_summary$Distance, levels = c('Source','Close', 'Middle', 'Far'))
+sig_letters <- data.frame(
+  label = c("a", "a,c", "b,c", "b"),
+  Distance = c("Source", "Close", "Middle", "Far"),
+  x=c(0.9, 1.8, 2.8, 3.9),
+  y=c(1050, 1050, 410, 700)
+)
+
+dispdensity_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order2), y=meanDensity, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanDensity-SE, ymax=meanDensity+SE), width=.2, position = position_dodge(0.8)) +
+  theme_classic() + 
+  labs(x="Dispersal Tray Distance", y=expression(Density~(plants/m^2))) +
+  theme(text=element_text(size=35)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1230)) +
+  scale_fill_manual(values=ch1Palette_source) +
+  geom_text(
+    data=sig_letters,
+    mapping=aes(x=x, y=y, label = label),
+    size=12,
+    hjust =-0.1,
+    vjust =-1
+  )
+ggsave("../output/Ch1Density_wMiddle.png", width=12, height=8, units="in")
+```
+
+## add triplets
+```{r, eval=FALSE}
+dispdensity_triplets <- merge(triplets, dispdensity)
+dispdensity_triplets2 <- dispdensity_triplets %>% select(FieldID, Distance, TripletType, Triplet, Block, Density)
+source_dispdensity_triplets <- rbind(sourcespringpopy1_density_triplets, dispdensity_triplets2)
+#write.csv(source_dispdensity_triplets, "../output/SourceDispDensity_4T.csv")
+```
+
+## Figure with triplets
+```{r, eval=FALSE}
+dispdensity_triplets_summary <- source_dispdensity_triplets %>% group_by(Distance, TripletType) %>% filter(!is.na(Density)) %>% summarize(meanDensity=mean(Density), SE = sd(Density)/sqrt(n()))
+dispdensity_triplets_summary
+
+dispdensity_triplets_summary$Distance <- factor(dispdensity_triplets_summary$Distance, levels = c('Source','Close', 'Middle', 'Far'))
+
+denistybargraph4T <- dispdensity_triplets_summary %>% ggplot(aes(x=factor(Distance, level=level_order2), y=meanDensity, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanDensity-SE, ymax=meanDensity+SE), width=.2, position = position_dodge(0.8)) +
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab(expression(Density~(plants/m^2))) +
+  theme(text=element_text(size=30)) + ylim(0,2500) +
+  scale_fill_manual(values=ch1Palette_source) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1DensitY_Source4T.pdf", width=22, height=8, units="in")
+```
+
+
+```{r, eval=FALSE}
+#no middle
+#dispdensity_nomiddle <- dispdensity %>% filter(Distance != "Middle")
+#dispdensity_nomiddle_summary <- dispdensity_nomiddle %>% group_by(Distance) %>% filter(!is.na(Density)) %>% summarize(meanDensity=mean(Density), #SE = sd(Density)/sqrt(n()))
+#dispdensity_nomiddle_summary
+#
+#denistybargraphnom <- dispdensity_nomiddle_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanDensity, group=Distance, #fill=Distance)) + 
+#  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+#  geom_errorbar(aes(ymin=meanDensity-SE, ymax=meanDensity+SE), width=.2, position = position_dodge(0.8)) + 
+#  theme_classic() + xlab("Dispersal Tray Distance") + ylab(expression(Density~(plants/m^2))) +
+#  theme(text=element_text(size=30)) + ylim(0,1200) +
+#  scale_fill_manual(values=ch1Palette)
+#ggsave("Ch1Density.pdf", width=8, height=5, units="in")
+```
+

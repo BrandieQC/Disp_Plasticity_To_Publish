@@ -1,0 +1,699 @@
+---
+title: "All Dispersal Traits"
+output: html_notebook
+---
+
+Libraries and other constants
+```{r}
+library(tidyverse)
+#level_order <- c('Close', 'Far')
+#ch1Palette <- c("#298B8A", "#B4A7E1")
+level_order <- c('Close', 'Middle', 'Far')
+ch1Palette <- c("#298B8A", "93E9EE","#B4A7E1")
+ch1Palette_source <- c("#E69F00", "#298B8A", "#B4A7E1")
+#densitycov <- read.csv("DensityCovTemplate.csv")
+#head(densitycov)
+#triplets <- read.csv("Pops_Trt_Triplet.csv")
+#triplets_1 <- triplets %>% #filter(TripletType=="Triplet 1")
+#tail(triplets_1)
+#triplets_2 <- triplets %>% #filter(TripletType=="Triplet 2")
+#triplets_3 <- triplets %>% #filter(TripletType=="Triplet 3")
+#triplets_4 <- triplets %>% #filter(TripletType=="Triplet 4")
+```
+
+## Size at Rep
+
+### Leaf Number
+```{r}
+leafndisp <- read.csv("../input/AllLeafN.csv")
+head(leafndisp)
+
+leafndispnm_summary <- leafndisp %>% group_by(Distance) %>% filter(!is.na(LeafN)) %>% summarize(meanLeafN=mean(LeafN), SE = sd(LeafN)/sqrt(n()))
+leafndispnm_summary  
+
+leafndispnm_summary$Distance <- factor(leafndispnm_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+sig_letters <- data.frame(
+  label = c("a", "a", "b"),
+  Distance = c("Close", "Middle", "Far"),
+  x=c(0.9, 1.9, 2.9),
+  y=c(19, 19, 27)
+)
+
+leafndispnm_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order), y=meanLeafN, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanLeafN-SE, ymax=meanLeafN+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() +
+  labs(x="Dispersal Tray Distance", y="Leaf Number") +
+  theme(text=element_text(size=30), legend.position = "none") + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 35)) +
+  scale_fill_manual(values=ch1Palette) + 
+  geom_text(
+    data=sig_letters,
+    mapping=aes(x=x, y=y, label = label),
+    size=12,
+    hjust =-0.1,
+    vjust =-1
+  )  
+ggsave("../output/Ch1LeafN_withMixed.png", width=6, height=5, units="in")
+  
+#leafndispnm <- subset(leafndisp, Distance != "Middle")
+#leafndisp_notray_summary <- leafndispnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% #filter(!is.na(LeafN)) %>% summarize(meanLeafN=mean(LeafN), SE = sd(LeafN)/sqrt(n()))
+#leafndispgraphnm_notray <-leafndisp_notray_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanLeafN, #group=Distance, fill=Distance)) + 
+#  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+#  geom_errorbar(aes(ymin=meanLeafN-SE, ymax=meanLeafN+SE), width=.2, position = position_dodge(0.8)) + 
+#  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Leaf Number") +
+#  theme(text=element_text(size=30)) + ylim(0,40) + 
+#  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1LeafN_NoTray.pdf", width=8, height=5, units="in")
+```
+
+
+### Rosette Diameter - Batch 1
+```{r}
+batch1rose <- read.csv("../input/Batch1Size.csv")
+head(batch1rose)
+batch1rosenm <- subset(batch1rose, Distance != "Middle")
+
+batch1rosenm_summary <- batch1rosenm %>% group_by(Distance) %>% filter(!is.na(RosDiameter)) %>% summarize(meanRosDiameter=mean(RosDiameter), SE = sd(RosDiameter)/sqrt(n()))
+batch1rosenm_summary  
+batch1rosenm_summarygraph <-batch1rosenm_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanRosDiameter, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanRosDiameter-SE, ymax=meanRosDiameter+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Rosette Diameter (mm)") +
+  theme(text=element_text(size=30)) + ylim(0, 80) + 
+  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1B1RoseDiam.pdf", width=8, height=5, units="in")
+
+batch1rose_notray_summary <- batch1rosenm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% filter(!is.na(RosDiameter)) %>% summarize(meanRosDiameter=mean(RosDiameter), SE = sd(RosDiameter)/sqrt(n()))
+batch1rose_notray_summary
+batch1rose_notray_summarygraph <-batch1rose_notray_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanRosDiameter, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanRosDiameter-SE, ymax=meanRosDiameter+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Rosette Diameter (mm)") +
+  theme(text=element_text(size=30)) + ylim(0, 80) + 
+  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1B1RoseDiam_NoTray.pdf", width=8, height=5, units="in")
+```
+
+### Leaf Length - Batch 2
+```{r}
+batch2length <- read.csv("../input/Batch2Size.csv")
+head(batch2length)
+batch2lengthnm <- subset(batch2length, Distance != "Middle")
+
+batch2lengthnm_summary <- batch2lengthnm %>% group_by(Distance) %>% filter(!is.na(LeafLength)) %>% summarize(meanLeafLength=mean(LeafLength), SE = sd(LeafLength)/sqrt(n()))
+batch2lengthnm_summary  
+batch2lengthnm_summarygraph <-batch2lengthnm_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanLeafLength, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanLeafLength-SE, ymax=meanLeafLength+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Leaf Length (cm)") +
+  theme(text=element_text(size=30)) + ylim(0,5) + 
+  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1B2LeafLength.pdf", width=8, height=5, units="in")
+
+batch2lengthnm_notray_summary <- batch2lengthnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% filter(!is.na(LeafLength)) %>% summarize(meanLeafLength=mean(LeafLength), SE = sd(LeafLength)/sqrt(n()))
+batch2lengthnm_notray_summary
+batch2lengthnm_notray_summarygraph <-batch2lengthnm_notray_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanLeafLength, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanLeafLength-SE, ymax=meanLeafLength+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Leaf Length (cm)") +
+  theme(text=element_text(size=30)) + ylim(0,5) + 
+  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1B2LeafLength_NoTray.pdf", width=8, height=5, units="in")
+```
+
+### Leaf Length - Both Batches
+```{r}
+#combine batch 1 rosediam with batch 2 leaf length
+batch1rosenm_length <- batch1rose %>% mutate(LeafLength=(RosDiameter*0.1)/2) %>% select(FieldID, Distance, PlantID, LocationDensity, Date, LeafLength, LeafN)
+head(batch1rosenm_length)
+batch2lengthnm_mergeprep <- batch2length %>% select(FieldID, Distance, PlantID, LocationDensity, Date, LeafLength, LeafN)
+head(batch2lengthnm_mergeprep)
+allleafsize <- rbind(batch1rosenm_length, batch2lengthnm_mergeprep)
+#write.csv(allleafsize, "../output/AllLeafSize.csv", row.names = FALSE)
+
+allleafsizelengthnm_summary <- allleafsize %>% group_by(Distance) %>% filter(!is.na(LeafLength)) %>% summarize(meanLeafLength=mean(LeafLength), SE = sd(LeafLength)/sqrt(n()))
+allleafsizelengthnm_summary  
+
+allleafsizelengthnm_summary$Distance <- factor(allleafsizelengthnm_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+
+allleafsizelengthnm_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order), y=meanLeafLength, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanLeafLength-SE, ymax=meanLeafLength+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + 
+  labs(x="Dispersal Tray Distance", y="Leaf Length (cm)") +
+  theme(text=element_text(size=30)) + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 5.5)) +
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1AllLeafLength_withMixed.png", width=8, height=5, units="in")
+
+#allleafsizelengthnm_notray_summary <- allleafsize %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% #filter(!is.na(LeafLength)) %>% summarize(meanLeafLength=mean(LeafLength), SE = sd(LeafLength)/sqrt(n()))
+#allleafsizelengthnm_notray_summary
+#allleafsizelengthnm_notray_summarygraph <-allleafsizelengthnm_notray_summary %>% ggplot(aes(x=factor(Distance, #level=level_order), y=meanLeafLength, group=Distance, fill=Distance)) + 
+#  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+#  geom_errorbar(aes(ymin=meanLeafLength-SE, ymax=meanLeafLength+SE), width=.2, position = position_dodge(0.8)) + 
+#  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Leaf Length (cm)") +
+#  theme(text=element_text(size=30)) + ylim(0,5) + 
+#  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1AllLeafLength_NoTray.pdf", width=8, height=5, units="in")
+```
+
+## Reproductive Traits
+```{r}
+reptraitsdisp <- read.csv("../input/AllRepTraits.csv")
+head(reptraitsdisp)
+#reptraitsdispnm <- subset(reptraitsdisp, Distance != "Middle")
+```
+
+### Height
+```{r}
+Height_summary <- reptraitsdisp %>% group_by(Distance) %>% filter(!is.na(Height)) %>% summarize(meanHeight=mean(Height), SE = sd(Height)/sqrt(n()))
+Height_summary
+
+Height_summary$Distance <- factor(Height_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+
+Height_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order), y=meanHeight, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanHeight-SE, ymax=meanHeight+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + 
+  labs(x="Dispersal Tray Distance", y="Height (cm)") +
+  theme(text=element_text(size=30), legend.position = "none") + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 45)) +
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1Height_withMixed.png", width=6, height=5, units="in")
+```
+
+### Primary Branches
+```{r}
+MainBranchN_summary <- reptraitsdisp %>% group_by(Distance) %>% filter(!is.na(MainBranchN)) %>% summarize(meanMainBranchN=mean(MainBranchN), SE = sd(MainBranchN)/sqrt(n()))
+MainBranchN_summary
+
+MainBranchN_summary$Distance <- factor(MainBranchN_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+
+MainBranchN_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order), y=meanMainBranchN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanMainBranchN-SE, ymax=meanMainBranchN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + 
+  labs(x="Dispersal Tray Distance", y="# Primary Branches") +
+  theme(text=element_text(size=30), legend.position = "none") + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 7)) +
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1PrimaryBranches_withMixed.png", width=6, height=5, units="in")
+```
+
+### Basal Branches
+```{r}
+BasalBrancheN_summary <- reptraitsdisp %>% mutate(BBcor=BasalBrancheN-1, BBcat=ifelse(BBcor==0, 0, 1)) %>% group_by(Distance) %>% filter(!is.na(BasalBrancheN)) %>% summarize(meanBasalBrancheN=mean(BBcor), SE = sd(BBcor)/sqrt(n()), meanBBProb=mean(BBcat), SEProb = sd(BBcat)/sqrt(n()))
+BasalBrancheN_summary
+
+BasalBrancheN_summary$Distance <- factor(BasalBrancheN_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+
+#BasalBrancheNgraphnm <-BasalBrancheN_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanBasalBrancheN, #group=Distance, fill=Distance)) + 
+#  geom_col(width=0.7, position=position_dodge(0.8)) + 
+#  geom_errorbar(aes(ymin=meanBasalBrancheN-SE, ymax=meanBasalBrancheN+SE), width=.2, position=position_dodge(0.8))+ 
+#  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Basal Branches") +
+#  theme(text=element_text(size=30)) +
+#  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1BasalBranches_withMixed.png", width=8, height=5, units="in")
+
+sig_letters_bb <- data.frame(
+  label = c("a", "a,c", "b,c"),
+  Distance = c("Close", "Middle", "Far"),
+  x=c(0.9, 1.8, 2.8),
+  y=c(0.53, 0.5, 0.43)
+)
+
+BasalBrancheN_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order), y=meanBBProb, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanBBProb-SEProb, ymax=meanBBProb+SEProb), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + 
+  labs(x="Dispersal Tray Distance", y="Probability of \n Basal Branches") +
+  theme(text=element_text(size=30), legend.position = "none") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 0.7)) +
+  scale_fill_manual(values=ch1Palette) +
+  geom_text(
+    data=sig_letters_bb,
+    mapping=aes(x=x, y=y, label = label),
+    size=12,
+    hjust =-0.1,
+    vjust =-1
+  )  
+ggsave("../output/Ch1BasalBranchesProb_withMixed.png", width=6, height=5, units="in")
+```
+
+### Successful Fruit Number
+```{r}
+SuccessfulFruitN_summary <- reptraitsdisp %>% group_by(Distance) %>% filter(!is.na(SuccessfulFruitN)) %>% summarize(meanSuccessfulFruitN=mean(SuccessfulFruitN), SE = sd(SuccessfulFruitN)/sqrt(n()))
+SuccessfulFruitN_summary
+
+SuccessfulFruitN_summary$Distance <- factor(SuccessfulFruitN_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+
+sig_letters_fruits <- data.frame(
+  label = c("a,c", "a", "b,c"),
+  Distance = c("Close", "Middle", "Far"),
+  x=c(0.8, 1.9, 2.8),
+  y=c(98, 125, 92)
+)
+
+SuccessfulFruitN_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order), y=meanSuccessfulFruitN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanSuccessfulFruitN-SE, ymax=meanSuccessfulFruitN+SE), width=.2, position=position_dodge(0.8))+
+  theme_classic() +
+  labs(x="Dispersal Tray Distance", y="# Healthy Siliques") +
+  theme(text=element_text(size=30), legend.position = "none") + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 152)) +
+  scale_fill_manual(values=ch1Palette) +
+  geom_text(
+    data=sig_letters_fruits,
+    mapping=aes(x=x, y=y, label = label),
+    size=12,
+    hjust =-0.1,
+    vjust =-1
+  )  
+ggsave("../output/Ch1SuccessfulFruitN_withMixed.png", width=6, height=5, units="in")
+```
+
+### Total Fruit Number
+```{r, eval=FALSE}
+TotalFruitN_summary <- reptraitsdisp %>% group_by(Distance) %>% filter(!is.na(TotalFruitN)) %>% summarize(meanTotalFruitN=mean(TotalFruitN), SE = sd(TotalFruitN)/sqrt(n()))
+TotalFruitN_summary
+TotalFruitN_summary$Distance <- factor(TotalFruitN_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+TotalFruitNgraphnm <-TotalFruitN_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanTotalFruitN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + ylim(0, 250)  +
+  geom_errorbar(aes(ymin=meanTotalFruitN-SE, ymax=meanTotalFruitN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Total Siliques") +
+  theme(text=element_text(size=30)) +  
+  scale_fill_manual(values=ch1Palette)
+ggsave("Ch1TotalFruitN_withMixed.png", width=8, height=5, units="in")
+```
+
+### NO Tray Figs
+```{r, eval=FALSE}
+Height_summary_notray <- reptraitsdispnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% filter(!is.na(Height)) %>% summarize(meanHeight=mean(Height), SE = sd(Height)/sqrt(n()))
+Height_summary_notray
+heightgraph_notraynm <-Height_summary_notray %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanHeight, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanHeight-SE, ymax=meanHeight+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Height (cm)") +
+  theme(text=element_text(size=30)) + ylim(0,40) + 
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1Height_NoTray.pdf", width=8, height=5, units="in")
+
+MainBranchN_summary_notray <- reptraitsdispnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% filter(!is.na(MainBranchN)) %>% summarize(meanMainBranchN=mean(MainBranchN), SE = sd(MainBranchN)/sqrt(n()))
+MainBranchN_summary_notray
+MainBranchNgraph_notraynm <-MainBranchN_summary_notray %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanMainBranchN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanMainBranchN-SE, ymax=meanMainBranchN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Primary Branches") +
+  theme(text=element_text(size=30)) + 
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1PrimaryBranches_NoTray.pdf", width=8, height=5, units="in")
+
+BasalBrancheN_summary_notray <- reptraitsdispnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% filter(!is.na(BasalBrancheN)) %>% summarize(meanBasalBrancheN=mean(BasalBrancheN), SE = sd(BasalBrancheN)/sqrt(n()))
+BasalBrancheN_summary_notray
+BasalBrancheNgraph_notraynm <-BasalBrancheN_summary_notray %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanBasalBrancheN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanBasalBrancheN-SE, ymax=meanBasalBrancheN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Basal Branches") +
+  theme(text=element_text(size=30)) +
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1BasalBranches_NoTray.pdf", width=8, height=5, units="in")
+
+
+SuccessfulFruitN_summary_notray <- reptraitsdispnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% filter(!is.na(SuccessfulFruitN)) %>% summarize(meanSuccessfulFruitN=mean(SuccessfulFruitN), SE = sd(SuccessfulFruitN)/sqrt(n()))
+SuccessfulFruitN_summary_notray
+SuccessfulFruitNgraph_notraynm <-SuccessfulFruitN_summary_notray %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanSuccessfulFruitN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanSuccessfulFruitN-SE, ymax=meanSuccessfulFruitN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Healthy Siliques") +
+  theme(text=element_text(size=30)) + 
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1SuccessfulFruitN_NoTray.pdf", width=8, height=5, units="in")
+
+
+TotalFruitN_summary_notray <- reptraitsdispnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% filter(!is.na(TotalFruitN)) %>% summarize(meanTotalFruitN=mean(TotalFruitN), SE = sd(TotalFruitN)/sqrt(n()))
+TotalFruitN_summary_notray
+TotalFruitNgraph_notraynm <-TotalFruitN_summary_notray %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanTotalFruitN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanTotalFruitN-SE, ymax=meanTotalFruitN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Total Siliques") +
+  theme(text=element_text(size=30)) +  
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1TotalFruitN_NoTray.pdf", width=8, height=5, units="in")
+```
+
+## Seed Weight
+```{r}
+ch1seedwt <- read.csv("../input/Ch1SeedWeights.csv")
+head(ch1seedwt)
+
+ch1seedwtnm_summary <- ch1seedwt %>% group_by(Distance) %>% filter(!is.na(SeedWeight)) %>% summarize(meanSeedWt=mean(SeedWeight), SE = sd(SeedWeight)/sqrt(n()))
+ch1seedwtnm_summary
+
+ch1seedwtnm_summary$Distance <- factor(ch1seedwtnm_summary$Distance, levels = c('Close', 'Middle', 'Far'))
+
+ch1seedwtnm_summary %>% 
+  ggplot(aes(x=factor(Distance, level=level_order), y=meanSeedWt, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanSeedWt-SE, ymax=meanSeedWt+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + 
+  labs(x="Dispersal Tray Distance", y="Seed Weight (mg)") +
+  theme(text=element_text(size=30), legend.position = "none") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1.8)) +
+  scale_fill_manual(values=ch1Palette)
+ggsave("../output/Ch1SeedWt_withMixed.png", width=6, height=5, units="in")
+
+
+#ch1seedwtnm <- subset(ch1seedwt, Distance != "Middle")
+#ch1seedwtnm_summary_notray <- ch1seedwtnm %>% group_by(Distance) %>% filter(LocationDensity=="plug") %>% #filter(!is.na(SeedWeight)) %>% summarize(meanSeedWt=mean(SeedWeight), SE = sd(SeedWeight)/sqrt(n()))
+#seedwtgraphnm_notray <-ch1seedwtnm_summary_notray %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanSeedWt, #group=Distance, fill=Distance)) + 
+#  geom_col(width=0.7, position=position_dodge(0.8)) + 
+#  geom_errorbar(aes(ymin=meanSeedWt-SE, ymax=meanSeedWt+SE), width=.2, position=position_dodge(0.8))+ 
+#  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Seed Weight (mg)") +
+#  theme(text=element_text(size=30)) +
+#  scale_fill_manual(values=ch1Palette)
+#ggsave("../output/Ch1SeedWt_NoTray.pdf", width=8, height=5, units="in")
+
+```
+
+## Batch 1 Rosette Diameter and Reproductive Traits Corrs
+```{r}
+#cor(x, method = "pearson", use = "complete.obs")
+#round(res, 2) - rounds the correlation coefficients 
+diamrep <- read.csv("B1RoseDiamRepCorr.csv")
+
+library(Hmisc)
+drcorr <- rcorr(as.matrix(diamrep), type=c("pearson","spearman"))
+#drcorr
+# Extract the correlation coefficients
+drcorr$r
+# Extract p-values
+drcorr$P
+```
+
+-----
+
+## Triplets 
+
+### Data Sets Prep
+```{r, eval=FALSE}
+leafndisp <- read.csv("../input/AllLeafN.csv")
+leafn_triplets_1 <- merge(triplets_1, leafndisp)
+head(leafn_triplets_1)
+leafn_triplets_2 <- merge(triplets_2, leafndisp)
+leafn_triplets_3 <- merge(triplets_3, leafndisp)
+leafn_triplets_4 <- merge(triplets_4, leafndisp)
+leafn_alltriplets <- rbind(leafn_triplets_1,leafn_triplets_2,leafn_triplets_3,leafn_triplets_4)
+leafn_alltripletssep <- leafn_alltriplets %>% separate(PlantID, c("tray", "soil.level", "indivn"), remove=FALSE) %>% unite(DispTrayID, tray:soil.level, remove=FALSE) %>% select(1:8, soil.level, LocationDensity:LeafN)
+head(leafn_alltripletssep)
+leafn_alltriplets_plug <- leafn_alltripletssep %>% filter(LocationDensity=="plug") %>% mutate(DensityCov=0.023575083)
+head(leafn_alltriplets_plug)
+leafn_alltriplets_tray <- leafn_alltripletssep %>% filter(LocationDensity=="tray")
+leafn_alltriplets_tray_cov <- merge(leafn_alltriplets_tray, densitycov)
+head(leafn_alltriplets_tray_cov)
+leafn_alltriplets_cov <- rbind(leafn_alltriplets_plug, leafn_alltriplets_tray_cov)
+head(leafn_alltriplets_cov)
+leafn_alltriplets_cov$Distance <- factor(leafn_alltriplets_cov$Distance, levels = c('Close', 'Middle', 'Far'))
+#write.csv(leafn_alltriplets_cov, "../output/LeafN_4T.csv", row.names = FALSE)
+
+batch1rose <- read.csv("../input/Batch1Size.csv")
+batch1rose_triplets_1 <- merge(triplets_1, batch1rose)
+head(batch1rose_triplets_1)
+batch1rose_triplets_2 <- merge(triplets_2, batch1rose)
+batch1rose_triplets_3 <- merge(triplets_3, batch1rose)
+batch1rose_triplets_4 <- merge(triplets_4, batch1rose)
+batch1rose_alltriplets <- rbind(batch1rose_triplets_1,batch1rose_triplets_2,batch1rose_triplets_3,batch1rose_triplets_4)
+batch1rose_alltripletssep <- batch1rose_alltriplets %>% separate(PlantID, c("tray", "soil.level", "indivn"), remove=FALSE) %>% unite(DispTrayID, tray:soil.level, remove=FALSE) %>% select(1:7, soil.level, LocationDensity:RosDiameter)
+head(batch1rose_alltripletssep)
+batch1rose_alltriplets_plug <- batch1rose_alltripletssep %>% filter(LocationDensity=="plug") %>% mutate(DensityCov=0.023575083)
+head(batch1rose_alltriplets_plug)
+batch1rose_alltriplets_tray <- batch1rose_alltripletssep %>% filter(LocationDensity=="tray")
+batch1rose_alltriplets_tray_cov <- merge(batch1rose_alltriplets_tray, densitycov)
+head(batch1rose_alltriplets_tray_cov)
+batch1rose_alltriplets_cov <- rbind(batch1rose_alltriplets_plug, batch1rose_alltriplets_tray_cov)
+head(batch1rose_alltriplets_cov)
+batch1rose_alltriplets_cov$Distance <- factor(batch1rose_alltriplets_cov$Distance, levels = c('Close', 'Middle', 'Far'))
+#write.csv(batch1rose_alltriplets_cov, "../output/Batch1RoseDiam_4T.csv", row.names = FALSE)
+
+batch2length <- read.csv("../input/Batch2Size.csv")
+batch1rose_length <- batch1rose %>% mutate(LeafLength=(RosDiameter*0.1)/2, RepStage="Late") %>% select(FieldID, Distance, PlantID, LocationDensity, RepStage, Date, LeafLength, LeafN)
+head(batch1rose_length)
+batch2length_mergeprep <- batch2length %>% select(FieldID:Date, LeafLength, LeafN)
+head(batch2length_mergeprep)
+allleafsize2 <- rbind(batch1rose_length, batch2length_mergeprep)
+allleafsize_triplets_1 <- merge(triplets_1, allleafsize2)
+head(allleafsize_triplets_1)
+allleafsize_triplets_2 <- merge(triplets_2, allleafsize2)
+allleafsize_triplets_3 <- merge(triplets_3, allleafsize2)
+allleafsize_triplets_4 <- merge(triplets_4, allleafsize2)
+allleafsize_alltriplets <- rbind(allleafsize_triplets_1,allleafsize_triplets_2,allleafsize_triplets_3,allleafsize_triplets_4)
+allleafsize_alltripletssep <- allleafsize_alltriplets %>% separate(PlantID, c("tray", "soil.level", "indivn"), remove=FALSE) %>% unite(DispTrayID, tray:soil.level, remove=FALSE) %>% select(1:7, soil.level, LocationDensity:LeafLength)
+head(allleafsize_alltripletssep)
+allleafsize_alltriplets_plug <- allleafsize_alltripletssep %>% filter(LocationDensity=="plug") %>% mutate(DensityCov=0.023575083)
+head(allleafsize_alltriplets_plug)
+allleafsize_alltriplets_tray <- allleafsize_alltripletssep %>% filter(LocationDensity=="tray")
+allleafsize_alltriplets_tray_cov <- merge(allleafsize_alltriplets_tray, densitycov)
+head(allleafsize_alltriplets_tray_cov)
+allleafsize_alltriplets_cov <- rbind(allleafsize_alltriplets_plug, allleafsize_alltriplets_tray_cov)
+head(allleafsize_alltriplets_cov)
+allleafsize_alltriplets_cov$Distance <- factor(allleafsize_alltriplets_cov$Distance, levels = c('Close', 'Middle', 'Far'))
+#write.csv(allleafsize_alltriplets_cov, "../output/AllLeafSize_4T.csv" , row.names = FALSE)
+
+
+reptraitsdisp <- read.csv("../input/AllRepTraits.csv")
+reptraits_triplets_1 <- merge(triplets_1, reptraitsdisp)
+head(reptraits_triplets_1)
+reptraits_triplets_2 <- merge(triplets_2, reptraitsdisp)
+reptraits_triplets_3 <- merge(triplets_3, reptraitsdisp)
+reptraits_triplets_4 <- merge(triplets_4, reptraitsdisp)
+reptraits_alltriplets <- rbind(reptraits_triplets_1,reptraits_triplets_2,reptraits_triplets_3,reptraits_triplets_4)
+names(reptraits_alltriplets)
+reptraits_alltripletssep <- reptraits_alltriplets %>% separate(PlantID, c("tray", "soil.level", "indivn"), remove=FALSE) %>% unite(DispTrayID, tray:soil.level, remove=FALSE) %>% select(1:8, soil.level, LocationDensity:TotalFruitN)
+head(reptraits_alltripletssep)
+reptraits_alltriplets_plug <- reptraits_alltripletssep %>% filter(LocationDensity=="plug") %>% mutate(DensityCov=0.023575083)
+head(reptraits_alltriplets_plug)
+reptraits_alltriplets_tray <- reptraits_alltripletssep %>% filter(LocationDensity=="tray")
+reptraits_alltriplets_tray_cov <- merge(reptraits_alltriplets_tray, densitycov)
+head(reptraits_alltriplets_tray_cov)
+reptraits_alltriplets_cov <- rbind(reptraits_alltriplets_plug, reptraits_alltriplets_tray_cov)
+head(reptraits_alltriplets_cov)
+reptraits_alltriplets_cov$Distance <- factor(reptraits_alltriplets_cov$Distance, levels = c('Close', 'Middle', 'Far'))
+#write.csv(reptraits_alltriplets_cov, "../output/RepTraits_4T.csv", row.names = FALSE)
+
+
+ch1seedwt <- read.csv("../input/Ch1SeedWeights.csv")
+ch1seedwt_triplets_1 <- merge(triplets_1, ch1seedwt)
+head(ch1seedwt_triplets_1)
+ch1seedwt_triplets_2 <- merge(triplets_2, ch1seedwt)
+ch1seedwt_triplets_3 <- merge(triplets_3, ch1seedwt)
+ch1seedwt_triplets_4 <- merge(triplets_4, ch1seedwt)
+ch1seedwt_alltriplets <- rbind(ch1seedwt_triplets_1,ch1seedwt_triplets_2,ch1seedwt_triplets_3,ch1seedwt_triplets_4)
+ch1seedwt_alltripletssep <- ch1seedwt_alltriplets %>% separate(PlantID, c("tray", "soil.level", "indivn"), remove=FALSE) %>% unite(DispTrayID, tray:soil.level, remove=FALSE) %>% select(1:7, soil.level, LocationDensity:SeedWeight)
+head(ch1seedwt_alltripletssep)
+ch1seedwt_alltriplets_plug <- ch1seedwt_alltripletssep %>% filter(LocationDensity=="plug") %>% mutate(DensityCov=0.023575083)
+head(ch1seedwt_alltriplets_plug)
+ch1seedwt_alltriplets_tray <- ch1seedwt_alltripletssep %>% filter(LocationDensity=="tray")
+ch1seedwt_alltriplets_tray_cov <- merge(ch1seedwt_alltriplets_tray, densitycov)
+head(ch1seedwt_alltriplets_tray_cov)
+ch1seedwt_alltriplets_cov <- rbind(ch1seedwt_alltriplets_plug, ch1seedwt_alltriplets_tray_cov)
+head(ch1seedwt_alltriplets_cov)
+ch1seedwt_alltriplets_cov$Distance <- factor(ch1seedwt_alltriplets_cov$Distance, levels = c('Close', 'Middle', 'Far'))
+#write.csv(ch1seedwt_alltriplets_cov, "../output/SeedWeights_4T.csv", row.names = FALSE)
+
+```
+
+### combine traits for corrs
+```{r, eval=FALSE}
+names(ch1seedwt)
+names(reptraitsdisp)
+names(allleafsize2)
+mergedisp1 <- merge(allleafsize2, reptraitsdisp, by="PlantID")
+names(mergedisp1)
+leafnreptraits <- mergedisp1 %>% select(PlantID, FieldID = FieldID.x, Distance=Distance.x, LeafLength, LeafN, Height, MainBranchN, BasalBrancheN, SuccessfulFruitN, TotalFruitN)
+#write.csv(leafnreptraits, "../output/LeafNRepTraits_forCorr.csv", row.names = FALSE)
+
+mergedisp2 <- merge(mergedisp1, ch1seedwt,  by="PlantID")
+names(mergedisp2)
+leafnreptraitsseedwt <- mergedisp2 %>% select(PlantID, FieldID = FieldID.x, Distance=Distance.x, LeafLength, LeafN, Height, MainBranchN, BasalBrancheN, SuccessfulFruitN, TotalFruitN, SeedWeight)
+#write.csv(leafnreptraitsseedwt, "../output/AllTraits_forCorr.csv", row.names = FALSE)
+```
+
+
+### Size at Rep - Triplets
+```{r, eval=FALSE}
+#remove incomplete triplets
+leafn_alltriplets_rminc <- leafn_alltriplets 
+leafn_alltriplets_rminc <- leafn_alltriplets_rminc[!(leafn_alltriplets_rminc$TripletType=="Triplet 2" & leafn_alltriplets_rminc$Triplet=="1"),]
+leafn_alltriplets_rminc <- leafn_alltriplets_rminc[!(leafn_alltriplets_rminc$TripletType=="Triplet 3" & leafn_alltriplets_rminc$Triplet=="1"),]
+leafn_alltriplets_rminc <- leafn_alltriplets_rminc[!(leafn_alltriplets_rminc$TripletType=="Triplet 3" & leafn_alltriplets_rminc$Triplet=="2"),]
+leafn_alltriplets_rminc <- leafn_alltriplets_rminc[!(leafn_alltriplets_rminc$TripletType=="Triplet 4" & leafn_alltriplets_rminc$Triplet=="1"),]
+leafn_alltriplets_rminc <- leafn_alltriplets_rminc[!(leafn_alltriplets_rminc$TripletType=="Triplet 4" & leafn_alltriplets_rminc$Triplet=="2"),]
+summary(leafn_alltriplets_rminc)
+leafn_alltriplets_rminc$Distance <- factor(leafn_alltriplets_rminc$Distance, levels = c('Close', 'Middle', 'Far'))
+
+batch1rose_alltriplets_rminc <- batch1rose_alltriplets 
+batch1rose_alltriplets_rminc <- batch1rose_alltriplets_rminc[!(batch1rose_alltriplets_rminc$TripletType=="Triplet 2" & batch1rose_alltriplets_rminc$Triplet=="1"),]
+batch1rose_alltriplets_rminc <- batch1rose_alltriplets_rminc[!(batch1rose_alltriplets_rminc$TripletType=="Triplet 3" & batch1rose_alltriplets_rminc$Triplet=="1"),]
+batch1rose_alltriplets_rminc <- batch1rose_alltriplets_rminc[!(batch1rose_alltriplets_rminc$TripletType=="Triplet 3" & batch1rose_alltriplets_rminc$Triplet=="2"),]
+batch1rose_alltriplets_rminc <- batch1rose_alltriplets_rminc[!(batch1rose_alltriplets_rminc$TripletType=="Triplet 4" & batch1rose_alltriplets_rminc$Triplet=="1"),]
+batch1rose_alltriplets_rminc <- batch1rose_alltriplets_rminc[!(batch1rose_alltriplets_rminc$TripletType=="Triplet 4" & batch1rose_alltriplets_rminc$Triplet=="2"),]
+summary(batch1rose_alltriplets_rminc)
+batch1rose_alltriplets_rminc$Distance <- factor(batch1rose_alltriplets_rminc$Distance, levels = c('Close', 'Middle', 'Far'))
+
+allleafsize_alltriplets_rminc <- allleafsize_alltriplets 
+allleafsize_alltriplets_rminc <- allleafsize_alltriplets_rminc[!(allleafsize_alltriplets_rminc$TripletType=="Triplet 2" & allleafsize_alltriplets_rminc$Triplet=="1"),]
+allleafsize_alltriplets_rminc <- allleafsize_alltriplets_rminc[!(allleafsize_alltriplets_rminc$TripletType=="Triplet 3" & allleafsize_alltriplets_rminc$Triplet=="1"),]
+allleafsize_alltriplets_rminc <- allleafsize_alltriplets_rminc[!(allleafsize_alltriplets_rminc$TripletType=="Triplet 3" & allleafsize_alltriplets_rminc$Triplet=="2"),]
+allleafsize_alltriplets_rminc <- allleafsize_alltriplets_rminc[!(allleafsize_alltriplets_rminc$TripletType=="Triplet 4" & allleafsize_alltriplets_rminc$Triplet=="1"),]
+allleafsize_alltriplets_rminc <- allleafsize_alltriplets_rminc[!(allleafsize_alltriplets_rminc$TripletType=="Triplet 4" & allleafsize_alltriplets_rminc$Triplet=="2"),]
+summary(allleafsize_alltriplets_rminc)
+allleafsize_alltriplets_rminc$Distance <- factor(allleafsize_alltriplets_rminc$Distance, levels = c('Close', 'Middle', 'Far'))
+  
+#--#
+leafn_alltriplets_summary <- leafn_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(LeafN)) %>% summarize(meanLeafN=mean(LeafN), SE = sd(LeafN)/sqrt(n()))
+leafn_alltriplets_summary  
+leafn_alltriplets_summary_fig <-leafn_alltriplets_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanLeafN, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanLeafN-SE, ymax=meanLeafN+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Leaf Number") +
+  theme(text=element_text(size=30)) + ylim(0,40) + 
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("Ch1LeafN_4T.pdf", width=16, height=5, units="in")
+
+
+
+#rosette diameter - batch 1
+batch1rose_alltriplets_summary <- batch1rose_alltriplets_rminc %>% group_by(Distance,TripletType) %>% filter(!is.na(RosDiameter)) %>% summarize(meanRosDiameter=mean(RosDiameter), SE = sd(RosDiameter)/sqrt(n()))
+batch1rose_alltriplets_summary  
+batch1rose_alltriplets_summarygraph <-batch1rose_alltriplets_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanRosDiameter, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanRosDiameter-SE, ymax=meanRosDiameter+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Rosette Diameter (mm)") +
+  theme(text=element_text(size=30)) +  
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1B1RoseDiam_4T.pdf", width=8, height=5, units="in")
+
+
+
+##leaf length - combined 
+allleafsize_alltriplets_summary <- allleafsize_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(LeafLength)) %>% summarize(meanLeafLength=mean(LeafLength), SE = sd(LeafLength)/sqrt(n()))
+allleafsize_alltriplets_summary  
+allleafsizelengthnm_summarygraph <-allleafsize_alltriplets_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanLeafLength, group=Distance, fill=Distance)) + 
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanLeafLength-SE, ymax=meanLeafLength+SE), width=.2, position = position_dodge(0.8)) + 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Leaf Length (cm)") +
+  theme(text=element_text(size=30)) + ylim(0,6) + 
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1AllLeafLength_4T.pdf", width=16, height=5, units="in")
+```
+
+### Rep Traits - Triplets
+```{r, eval=FALSE}
+##remove incomplete triplets##
+reptraits_alltriplets_rminc <- reptraits_alltriplets 
+reptraits_alltriplets_rminc <- reptraits_alltriplets_rminc[!(reptraits_alltriplets_rminc$TripletType=="Triplet 2" & reptraits_alltriplets_rminc$Triplet=="1"),]
+reptraits_alltriplets_rminc <- reptraits_alltriplets_rminc[!(reptraits_alltriplets_rminc$TripletType=="Triplet 3" & reptraits_alltriplets_rminc$Triplet=="1"),]
+reptraits_alltriplets_rminc <- reptraits_alltriplets_rminc[!(reptraits_alltriplets_rminc$TripletType=="Triplet 4" & reptraits_alltriplets_rminc$Triplet=="1"),]
+reptraits_alltriplets_rminc <- reptraits_alltriplets_rminc[!(reptraits_alltriplets_rminc$TripletType=="Triplet 4" & reptraits_alltriplets_rminc$Triplet=="2"),]
+summary(reptraits_alltriplets_rminc)
+reptraits_alltriplets_rminc$Distance <- factor(reptraits_alltriplets_rminc$Distance, levels = c('Close', 'Middle', 'Far'))
+
+totalfruit_alltriplets_rminc <- reptraits_alltriplets_rminc 
+totalfruit_alltriplets_rminc <- totalfruit_alltriplets_rminc[!(totalfruit_alltriplets_rminc$TripletType=="Triplet 1" & totalfruit_alltriplets_rminc$Triplet=="1"),]
+totalfruit_alltriplets_rminc <- totalfruit_alltriplets_rminc[!(totalfruit_alltriplets_rminc$TripletType=="Triplet 2" & totalfruit_alltriplets_rminc$Triplet=="2"),]
+totalfruit_alltriplets_rminc <- totalfruit_alltriplets_rminc[!(totalfruit_alltriplets_rminc$TripletType=="Triplet 3" & totalfruit_alltriplets_rminc$Triplet=="2"),]
+summary(totalfruit_alltriplets_rminc)
+totalfruit_alltriplets_rminc$Distance <- factor(totalfruit_alltriplets_rminc$Distance, levels = c('Close', 'Middle', 'Far'))
+
+#--#
+Height_summary_4T <- reptraits_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(Height)) %>% summarize(meanHeight=mean(Height), SE = sd(Height)/sqrt(n()))
+Height_summary_4T
+heightgraphnm <-Height_summary_4T %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanHeight, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanHeight-SE, ymax=meanHeight+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Height (cm)") +
+  theme(text=element_text(size=30)) + ylim(0,55) + 
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1Height_4T.pdf", width=16, height=5, units="in")
+
+MainBranchN_summary_4T <- reptraits_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(MainBranchN)) %>% summarize(meanMainBranchN=mean(MainBranchN), SE = sd(MainBranchN)/sqrt(n()))
+MainBranchN_summary_4T
+MainBranchNgraphnm <-MainBranchN_summary_4T %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanMainBranchN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanMainBranchN-SE, ymax=meanMainBranchN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Primary Branches") +
+  theme(text=element_text(size=30)) + 
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1PrimaryBranches_4T.pdf", width=16, height=5, units="in")
+
+BasalBrancheN_summary_4T <- reptraits_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(BasalBrancheN)) %>% summarize(meanBasalBrancheN=mean(BasalBrancheN), SE = sd(BasalBrancheN)/sqrt(n()))
+BasalBrancheN_summary_4T
+BasalBrancheNgraphnm <-BasalBrancheN_summary_4T %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanBasalBrancheN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanBasalBrancheN-SE, ymax=meanBasalBrancheN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Basal Branches") +
+  theme(text=element_text(size=30)) +
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1BasalBranches_4T.pdf", width=16, height=5, units="in")
+
+
+SuccessfulFruitN_summary_4T <- reptraits_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(SuccessfulFruitN)) %>% summarize(meanSuccessfulFruitN=mean(SuccessfulFruitN), SE = sd(SuccessfulFruitN)/sqrt(n()))
+SuccessfulFruitN_summary_4T
+SuccessfulFruitNgraphnm <-SuccessfulFruitN_summary_4T %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanSuccessfulFruitN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanSuccessfulFruitN-SE, ymax=meanSuccessfulFruitN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Healthy Siliques") +
+  theme(text=element_text(size=30)) + 
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1SuccessfulFruitN_4T.pdf", width=16, height=5, units="in")
+
+
+TotalFruitN_summary_4T <- totalfruit_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(TotalFruitN)) %>% summarize(meanTotalFruitN=mean(TotalFruitN), SE = sd(TotalFruitN)/sqrt(n()))
+TotalFruitN_summary_4T
+TotalFruitNgraphnm <-TotalFruitN_summary_4T %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanTotalFruitN, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + ylim(0, 250) +
+  geom_errorbar(aes(ymin=meanTotalFruitN-SE, ymax=meanTotalFruitN+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("# Total Siliques") +
+  theme(text=element_text(size=30)) +  
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1TotalFruitN_4T.pdf", width=16, height=5, units="in")
+```
+
+
+### Seed Weight - Triplets
+```{r, eval=FALSE}
+##remove incomplete triplets##
+ch1seedwt_alltriplets_rminc <- ch1seedwt_alltriplets 
+ch1seedwt_alltriplets_rminc <- ch1seedwt_alltriplets_rminc[!(ch1seedwt_alltriplets_rminc$TripletType=="Triplet 2" & ch1seedwt_alltriplets_rminc$Triplet=="1"),]
+ch1seedwt_alltriplets_rminc <- ch1seedwt_alltriplets_rminc[!(ch1seedwt_alltriplets_rminc$TripletType=="Triplet 3" & ch1seedwt_alltriplets_rminc$Triplet=="1"),]
+ch1seedwt_alltriplets_rminc <- ch1seedwt_alltriplets_rminc[!(ch1seedwt_alltriplets_rminc$TripletType=="Triplet 4" & ch1seedwt_alltriplets_rminc$Triplet=="1"),]
+ch1seedwt_alltriplets_rminc <- ch1seedwt_alltriplets_rminc[!(ch1seedwt_alltriplets_rminc$TripletType=="Triplet 4" & ch1seedwt_alltriplets_rminc$Triplet=="2"),]
+summary(ch1seedwt_alltriplets_rminc)
+ch1seedwt_alltriplets_rminc$Distance <- factor(ch1seedwt_alltriplets_rminc$Distance, levels = c('Close', 'Middle', 'Far'))
+
+#--#
+ch1seedwt_alltriplets_summary <- ch1seedwt_alltriplets_rminc %>% group_by(Distance, TripletType) %>% filter(!is.na(SeedWeight)) %>% summarize(meanSeedWt=mean(SeedWeight), SE = sd(SeedWeight)/sqrt(n()))
+ch1seedwt_alltriplets_summary
+ch1seedwt_alltriplets_summary_fig <-ch1seedwt_alltriplets_summary %>% ggplot(aes(x=factor(Distance, level=level_order), y=meanSeedWt, group=Distance, fill=Distance)) + 
+  geom_col(width=0.7, position=position_dodge(0.8)) + ylim(0, 2) +
+  geom_errorbar(aes(ymin=meanSeedWt-SE, ymax=meanSeedWt+SE), width=.2, position=position_dodge(0.8))+ 
+  theme_classic() + xlab("Dispersal Tray Distance") + ylab("Seed Weight (mg)") +
+  theme(text=element_text(size=30)) +
+  scale_fill_manual(values=ch1Palette) +
+  facet_grid(. ~TripletType)
+ggsave("../output/Ch1SeedWt_4T.pdf", width=16, height=5, units="in")
+```
