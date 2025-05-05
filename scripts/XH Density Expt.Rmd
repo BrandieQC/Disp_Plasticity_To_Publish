@@ -1,0 +1,297 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# XH Density Experiment 
+
+## Libraries and other constants
+```{r}
+library(tidyverse)
+#level_order <- c('Close', 'Far') - no middle 
+ch1Palette_2 <- c("#B4A7E1", "#298B8A")
+ch1Palette_3 <- c("#000000","#B4A7E1", "#298B8A")
+level_order_density <- c('Low', 'High')
+#ch1Palette_source <- c("#E69F00", "#298B8A", "#B4A7E1")
+#level_order <- c('Close', 'Middle', 'Far')
+#ch1Palette <- c("#298B8A", "93E9EE","#B4A7E1")
+#ch1Palette_source <- c("#E69F00", "#298B8A", "93E9EE","#B4A7E1")
+#triplets <- read.csv("Pops_Trt_Triplet.csv")
+#names(triplets)
+library(gridExtra)
+library(ggpubr)
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+```
+
+## Reaction norms 
+
+### Load the data
+```{r}
+xhdensity <- read.csv("XHDensityData.csv")
+head(xhdensity)
+```
+
+### Height correction 
+```{r}
+xhdensity_noheight <- xhdensity %>% select(ID, Geno, Genotype, SizeRE, SizeOrig, PotPlug, Chamber, Tray, Density, Season, MatFr, ImmFr, Flowers, BasBr, PrimBr, TotBr, FailedFr, LeafNum, Diam)
+xhheight_cor <- read.csv("XH_HeightCorrection.csv")
+xhdensity_corheight <- merge(xhdensity_noheight, xhheight_cor)
+head(xhdensity_corheight)
+#write.csv(xhdensity_corheight, "~/Documents/Duke/Lab/Dispersal Trays/XHDensity_CorHeight.csv", row.names = FALSE)
+
+xhdensity_corheight$Density <- factor(xhdensity_corheight$Density, levels = c('Low', 'High'))
+
+xhdensity_corheight_disp <- xhdensity_corheight %>% mutate(Disp=ifelse(SizeRE=="Big", "Good", "Poor"), Season=ifelse(Season=="Early", "Short", "Long"), BBcor=BasBr-1)
+```
+
+### Size at Rep
+```{r}
+xhleafn_summary <- xhdensity_corheight_disp %>% group_by(Density, Disp) %>% filter(!is.na(LeafNum)) %>% summarise(meanLeafN=mean(LeafNum), SE = sd(LeafNum)/sqrt(n()))
+xhleafn_summary
+xhleafn_summary$Density <- factor(xhleafn_summary$Density, levels = c('Low', 'High'))
+
+xhleafn_summary2 <- xhdensity_corheight_disp %>% group_by(Genotype, Density, Disp) %>% filter(!is.na(LeafNum)) %>% summarise(meanLeafN=mean(LeafNum), SE = 0)
+xhleafn_summary2
+xhleafn_summary2$Density <- factor(xhleafn_summary2$Density, levels = c('Low', 'High'))
+xhleafn_summary2_unite <- unite(xhleafn_summary2, "DispGeno", c("Disp","Genotype"), remove = FALSE)
+xhleafn_summary2_unite
+
+xhleafn_summary3 <- xhdensity_corheight_disp %>% group_by(Density) %>% filter(!is.na(LeafNum)) %>% summarise(meanLeafN=mean(LeafNum), SE = sd(LeafNum)/sqrt(n())) %>% mutate(Disp="Average")
+xhleafn_summary3
+xhleafn_summary3$Density <- factor(xhleafn_summary3$Density, levels = c('Low', 'High'))
+xhleafn_summary_bind <- rbind(xhleafn_summary, xhleafn_summary3) %>% mutate(DispGeno=Disp)
+xhleafn_summary_bind
+
+#the below has genotypes and average bars, yay! 
+xhleafn_summary_bind$Density <- factor(xhleafn_summary_bind$Density, levels = c('Low', 'High'))
+xhleafn_summary_fig <- xhleafn_summary_bind %>% 
+  ggplot(aes(x=Density, y=meanLeafN, group=
+DispGeno, color=Disp)) + 
+  geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanLeafN-SE, ymax=meanLeafN+SE), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Leaf Number") + theme(text=element_text(size=37)) +
+  scale_colour_manual(values=ch1Palette_3) +
+  geom_line(data = xhleafn_summary2_unite, size=0.2) +
+  geom_point(data = xhleafn_summary2_unite, size=0.8) 
+#ggsave("XHDensLeafN_Genos.png", width=8, height=5, units="in")
+
+xhleafn_summary_fig2 <- xhleafn_summary_bind %>% 
+  filter(DispGeno != "Average") %>% 
+  ggplot(aes(x=Density, y=meanLeafN, group=
+DispGeno, color=Disp)) + 
+  geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanLeafN-SE, ymax=meanLeafN+SE), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Leaf Number") + theme(text=element_text(size=37)) +
+  scale_colour_manual(values=ch1Palette_2) +
+  geom_line(data = xhleafn_summary2_unite, size=0.2) +
+  geom_point(data = xhleafn_summary2_unite, size=0.8) 
+
+xhdiam_summary <- xhdensity_corheight_disp %>% group_by(Density, Disp) %>% filter(!is.na(Diam)) %>% summarise(meanDiam=mean(Diam), SE = sd(Diam)/sqrt(n()))
+xhdiam_summary
+
+xhdiam_summary2 <- xhdensity_corheight_disp %>% group_by(Genotype, Density, Disp) %>% filter(!is.na(Diam)) %>% summarise(meanDiam=mean(Diam), SE = 0)
+xhdiam_summary2
+xhdiam_summary2_unite <- unite(xhdiam_summary2, "DispGeno", c("Disp","Genotype"), remove = FALSE)
+xhdiam_summary2_unite
+
+xhdiam_summary3 <- xhdensity_corheight_disp %>% group_by(Density) %>% filter(!is.na(Diam)) %>% summarise(meanDiam=mean(Diam), SE = sd(Diam)/sqrt(n())) %>% mutate(Disp="Average")
+xhdiam_summary3
+xhdiam_summary_bind <- rbind(xhdiam_summary, xhdiam_summary3) %>% mutate(DispGeno=Disp)
+xhdiam_summary_bind
+
+xhdiam_summary_bind$Density <- factor(xhdiam_summary_bind$Density, levels = c('Low', 'High'))
+xhdiam_summary_fig <- xhdiam_summary_bind %>% ggplot(aes(x=Density, y=meanDiam, group=DispGeno, color=Disp)) + geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanDiam-SE, ymax=meanDiam+SE), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Rosette Diameter") + theme(text=element_text(size=37)) +
+  scale_colour_manual(values=ch1Palette_3) +
+  geom_line(data = xhdiam_summary2_unite, size=0.2) +
+  geom_point(data = xhdiam_summary2_unite, size=0.8) 
+ggsave("XHDensRoseDiam.png", width=8, height=5, units="in")
+
+xhdiam_summary_fig2 <- xhdiam_summary_bind %>% 
+  filter(DispGeno != "Average") %>%
+  ggplot(aes(x=Density, y=meanDiam, group=DispGeno, color=Disp)) + 
+  geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanDiam-SE, ymax=meanDiam+SE), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Rosette Diameter") + theme(text=element_text(size=37)) +
+  scale_colour_manual(values=ch1Palette_2) +
+  geom_line(data = xhdiam_summary2_unite, size=0.2) +
+  geom_point(data = xhdiam_summary2_unite, size=0.8) 
+
+#size at reproduction combined
+legend <- get_legend(xhleafn_summary_fig)
+xhleafn_summary_fig <- xhleafn_summary_fig + theme(legend.position="none")
+xhdiam_summary_fig <- xhdiam_summary_fig + theme(legend.position="none")
+grid.arrange(xhleafn_summary_fig, xhdiam_summary_fig, legend, ncol=3, widths=c(3.12, 3.12, 1.09))
+#1900 x 700
+
+legend <- get_legend(xhleafn_summary_fig2)
+xhleafn_summary_fig2 <- xhleafn_summary_fig2 + theme(legend.position="none")
+xhdiam_summary_fig2 <- xhdiam_summary_fig2 + theme(legend.position="none")
+grid.arrange(xhleafn_summary_fig2, xhdiam_summary_fig2, legend, ncol=3, widths=c(3.12, 3.12, 1.09))
+#1900 x 700
+```
+
+### Rep Traits Summary 
+```{r}
+xhreptraits_summary <- xhdensity_corheight_disp %>% group_by(Season, Density, Disp) %>% filter(!is.na(MatFr)) %>% summarise(meanMatFr=mean(MatFr), SEMF=sd(MatFr)/sqrt(n()), meanBB=mean(BBcor), SEBB=sd(BBcor)/sqrt(n()), meanPB=mean(PrimBr), SEPB=sd(PrimBr)/sqrt(n()), meanTotB=mean(TotBr), SETotB=sd(TotBr)/sqrt(n()), meanHeight=mean(Height), SEH=sd(Height)/sqrt(n()))
+xhreptraits_summary
+
+#only traits not included are immature fruit, flowers, and failed fruits 
+xhreptraits_summary2 <- xhdensity_corheight_disp %>% group_by(Genotype, Season, Density, Disp) %>% filter(!is.na(MatFr)) %>% summarise(meanMatFr=mean(MatFr), SEMF=0, meanBB=mean(BBcor), SEBB=0, meanPB=mean(PrimBr), SEPB=0, meanTotB=mean(TotBr), SETotB=0, meanHeight=mean(Height), SEH=0)
+xhreptraits_summary2
+xhreptraits_summary2_unite <- unite(xhreptraits_summary2, "DispGeno", c("Disp","Genotype"), remove = FALSE)
+xhreptraits_summary2_unite
+xhreptraits_summary2_unite$Season <- factor(xhreptraits_summary2_unite$Season, levels = c('Short', 'Long'))
+
+xhreptraits_summary3 <- xhdensity_corheight_disp %>% group_by(Season,Density) %>%filter(!is.na(MatFr)) %>% summarise(meanMatFr=mean(MatFr), SEMF=sd(MatFr)/sqrt(n()), meanBB=mean(BBcor), SEBB=sd(BBcor)/sqrt(n()), meanPB=mean(PrimBr), SEPB=sd(PrimBr)/sqrt(n()), meanTotB=mean(TotBr), SETotB=sd(TotBr)/sqrt(n()), meanHeight=mean(Height), SEH=sd(Height)/sqrt(n())) %>% mutate(Disp="Average")
+xhreptraits_summary3
+xhreptraits_summary_bind <- rbind(xhreptraits_summary, xhreptraits_summary3) %>% mutate(DispGeno=Disp)
+xhreptraits_summary_bind
+xhreptraits_summary_bind$Density <- factor(xhreptraits_summary_bind$Density, levels = c('Low', 'High'))
+xhreptraits_summary_bind$Season <- factor(xhreptraits_summary_bind$Season, levels = c('Short', 'Long'))
+```
+
+### Mature Fruits 
+```{r}
+xhMatFr_summary_fig <- xhreptraits_summary_bind %>% ggplot(aes(x=Density, y=meanMatFr, group=DispGeno, color=Disp)) + geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanMatFr-SEMF, ymax=meanMatFr+SEMF), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Mature Fruit Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_3) +
+  geom_line(data = xhreptraits_summary2_unite, size=0.2) +
+  geom_point(data = xhreptraits_summary2_unite, size=0.8) +
+  facet_grid(. ~Season)
+#ggsave("XHDensMatFr.png", width=16, height=6, units="in")
+
+xhMatFr_summary_fig2 <- xhreptraits_summary_bind %>% 
+  filter(DispGeno != "Average") %>%
+  ggplot(aes(x=Density, y=meanMatFr, group=DispGeno, color=Disp)) + 
+  geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanMatFr-SEMF, ymax=meanMatFr+SEMF), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Mature Fruit Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_2) +
+  geom_line(data = xhreptraits_summary2_unite, size=0.2) +
+  geom_point(data = xhreptraits_summary2_unite, size=0.8) +
+  facet_grid(. ~Season)
+ggsave("For Publication/output/XHDensMatFr_NoAvg.png", width=16, height=6, units="in")
+```
+
+### Basal Branches
+```{r}
+xhBB_summary_fig <- xhreptraits_summary_bind %>% ggplot(aes(x=Density, y=meanBB, group=DispGeno, color=Disp)) + geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanBB-SEBB, ymax=meanBB+SEBB), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Basal Branch Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_3) +
+  geom_line(data = xhreptraits_summary2_unite, size=0.2) +
+  geom_point(data = xhreptraits_summary2_unite, size=0.8) +
+  facet_grid(. ~Season)
+#ggsave("XHDensBB.png", width=16, height=6, units="in")
+
+xhBB_summary_fig2 <- xhreptraits_summary_bind %>% 
+   filter(DispGeno != "Average") %>%
+  ggplot(aes(x=Density, y=meanBB, group=DispGeno, color=Disp)) + 
+  geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanBB-SEBB, ymax=meanBB+SEBB), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Basal Branch Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_2) +
+  geom_line(data = xhreptraits_summary2_unite, size=0.2) +
+  geom_point(data = xhreptraits_summary2_unite, size=0.8) +
+  facet_grid(. ~Season)
+ggsave("For Publication/output/XH_BB_NoAvg.png", width=16, height=6, units="in")
+```
+
+### Primary Branches 
+```{r}
+xhPB_summary_fig <- xhreptraits_summary_bind %>% ggplot(aes(x=Density, y=meanPB, group=DispGeno, color=Disp)) + geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanPB-SEPB, ymax=meanPB+SEPB), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Primary Branch Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_3) +
+  geom_line(data = xhreptraits_summary2_unite, size=0.2) +
+  geom_point(data = xhreptraits_summary2_unite, size=0.8) +
+  facet_grid(. ~Season)
+ggsave("XHDensPB.png", width=16, height=6, units="in")
+```
+
+### Total Branches 
+```{r}
+xhTotB_summary_fig <- xhreptraits_summary_bind %>% ggplot(aes(x=Density, y=meanTotB, group=DispGeno, color=Disp)) + geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanTotB-SETotB, ymax=meanTotB+SETotB), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Total Branch Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_3) +
+  geom_line(data = xhreptraits_summary2_unite, size=0.2) +
+  geom_point(data = xhreptraits_summary2_unite, size=0.8) +
+  facet_grid(. ~Season)
+ggsave("XHDensTotB.png", width=16, height=6, units="in")
+```
+
+### Height 
+```{r}
+xhreptraits_summary_bind$Density <- factor(xhreptraits_summary_bind$Density, levels = c('Low', 'High'))
+xhHeight_summary_fig <- xhreptraits_summary_bind %>% ggplot(aes(x=Density, y=meanHeight, group=DispGeno, color=Disp)) + geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanHeight-SEH, ymax=meanHeight+SEH), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Height (cm)") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_3) +
+  geom_line(data = xhreptraits_summary2_unite, size=0.2) +
+  geom_point(data = xhreptraits_summary2_unite, size=0.8) +
+  facet_grid(. ~Season)
+ggsave("XHDensHeight.png", width=16, height=6, units="in")
+```
+
+
+
+## Genetic Variance
+```{r, eval=FALSE}
+head(xhdensity_corheight)
+geno_leafnmeans <- xhdensity_corheight_disp  %>% filter(!is.na(LeafNum)) %>% group_by(Geno, Density) %>% summarise(GenoMeanLeaf=mean(LeafNum)) 
+geno_leafnmeans
+geno_leafnmeans_var <- geno_leafnmeans %>% group_by(Density) %>% summarise(GenoVarLeaf=var(GenoMeanLeaf))
+geno_leafnmeans_var
+
+geno_diammeans <- xhdensity_corheight_disp  %>% filter(!is.na(Diam)) %>% group_by(Geno, Density) %>% summarise(GenoMeanDiam=mean(Diam)) 
+geno_diammeans
+geno_diammeans_var <- geno_diammeans %>% group_by(Density) %>% summarise(GenoVarDiam=var(GenoMeanDiam))
+geno_diammeans_var
+
+geno_reptraitsmeans <- xhdensity_corheight_disp %>% group_by(Geno, Season, Density) %>% filter(!is.na(MatFr)) %>% summarise(GenoMeanBB=mean(BBcor), GenoMeanPB=mean(PrimBr),GenoMeanTotB=mean(TotBr), GenoMeanHeight=mean(Height), GenoMeanMatFr=mean(MatFr))
+geno_reptraitsmeans
+geno_reptraitsmeans_var <- geno_reptraitsmeans %>% group_by(Season, Density) %>% summarise(GenovarBB=var(GenoMeanBB), GenovarPB=var(GenoMeanPB),GenovarTotB=var(GenoMeanTotB), GenovarHeight=var(GenoMeanHeight), GenovarMatFr=var(GenoMeanMatFr))
+geno_reptraitsmeans_var
+#write.csv(geno_reptraitsmeans_var, "~/Documents/Duke/Lab/Dispersal Trays/XHGenoRepVar.csv", row.names = FALSE)
+```
+
+## Genetic covariances
+```{r, eval=FALSE}
+geno_leafnmeans
+geno_diammeans
+geno_sizeatrep <- merge(geno_leafnmeans, geno_diammeans)
+geno_sizeatrep
+geno_reptraitsmeans_short <- geno_reptraitsmeans %>% filter(Season=="Short")
+geno_reptraitsmeans_short
+geno_reptraitsmeans_long <- geno_reptraitsmeans %>% filter(Season=="Long")
+geno_reptraitsmeans_long
+
+geno_corrs_short <- merge(geno_sizeatrep, geno_reptraitsmeans_short)
+geno_corrs_short_transf <- geno_corrs_short %>% mutate(GenoMeanPBsqrt=sqrt(GenoMeanPB), GenoMeanTotBLog=log(GenoMeanTotB), GenoMeanMatFrLog=log(GenoMeanMatFr))
+geno_corrs_short_transf
+geno_corrs_long <- merge(geno_sizeatrep, geno_reptraitsmeans_long)
+geno_corrs_long_transf <- geno_corrs_long %>% mutate(GenoMeanPBsqrt=sqrt(GenoMeanPB), GenoMeanTotBLog=log(GenoMeanTotB), GenoMeanMatFrLog=log(GenoMeanMatFr))
+
+library(rstatix)
+geno_corrs_short_transf %>% group_by(Density) %>% cor_test(GenoMeanLeaf, GenoMeanDiam, GenoMeanPBsqrt, GenoMeanTotBLog, GenoMeanHeight, GenoMeanMatFrLog)
+```
