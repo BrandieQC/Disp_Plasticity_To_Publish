@@ -1,0 +1,200 @@
+---
+title: "D11_Pilot_SNPs-Ecotypes"
+author: "Brandie QC"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Checking for differences in SNP/Ecotype Frequency across D11 pilot samples
+
+-   snp_frequency.txt: The estimated frequencies of alternative alleles in the reference panel from the pool seq data.
+
+-   ecotype_frequency.txt: The estimated frequencies of all genotypes in the reference panel from the pool seq data.
+
+## Load Libraries
+
+```{r}
+library(tidyverse)
+```
+
+## Load data
+
+```{r}
+rep1_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep1_testJM3_ecotype_frequency.txt", col_names = c("Genotype", "Freq")) %>% mutate(Rep="1")
+rep1_snps <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep1_testJM3_snp_frequency.txt", col_names = c("Chrom", "Pos", "Freq")) %>% mutate(Rep="1")
+
+rep2_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep2_ecotype_frequency.txt", col_names = c("Genotype", "Freq")) %>% mutate(Rep="2")
+rep2_snps <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep2_snp_frequency.txt", col_names = c("Chrom", "Pos", "Freq")) %>% mutate(Rep="2")
+
+rep3_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep3_ecotype_frequency.txt", col_names = c("Genotype", "Freq")) %>% mutate(Rep="3")
+rep3_snps <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep3_snp_frequency.txt", col_names = c("Chrom", "Pos", "Freq")) %>% mutate(Rep="3")
+
+rep4_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep4_ecotype_frequency.txt", col_names = c("Genotype", "Freq")) %>% mutate(Rep="4")
+rep4_snps <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep4_snp_frequency.txt", col_names = c("Chrom", "Pos", "Freq")) %>% mutate(Rep="4")
+
+rep5_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep5_ecotype_frequency.txt", col_names = c("Genotype", "Freq")) %>% mutate(Rep="5")
+rep5_snps <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D11Rep5_snp_frequency.txt", col_names = c("Chrom", "Pos", "Freq")) %>% mutate(Rep="5")
+```
+
+## Merge
+```{r}
+all_ecotypes <- rep1_ecotypes %>% 
+  bind_rows(rep2_ecotypes) %>% 
+  bind_rows(rep3_ecotypes) %>% 
+  bind_rows(rep4_ecotypes) %>% 
+  bind_rows(rep5_ecotypes)
+
+all_snps <- rep1_snps %>% 
+  bind_rows(rep2_snps) %>% 
+  bind_rows(rep3_snps) %>% 
+  bind_rows(rep4_snps) %>% 
+  bind_rows(rep5_snps)
+```
+
+## Plotting Ecotypes
+```{r}
+all_ecotypes %>% 
+  filter(Genotype<6000) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>6000, Genotype<6200) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>6200, Genotype<6980) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>6980, Genotype<7060) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>7060, Genotype<7180) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>7180, Genotype<7300) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>7300, Genotype<8000) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>8000, Genotype<9000) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9000, Genotype<9500) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9500, Genotype<9550) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9550, Genotype<9600) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9600, Genotype<9700) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9700, Genotype<9750) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9750, Genotype<9800) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9800, Genotype<9900) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>9900, Genotype<10000) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_ecotypes %>% 
+  filter(Genotype>10000) %>% 
+  mutate(Genotype=as.character(Genotype)) %>% 
+  ggplot(aes(x=Genotype, y=Freq, group = Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+```
+The different samples mostly follow the same trends. However, Rep 2 seems to be at higher or lower freq than the others frequently. Rep 2 also sometimes diverges from Reps 3-5.
+
+## Plotting SNPs
+```{r}
+all_snps %>% 
+  filter(Chrom==1, Pos<1000) %>% 
+  ggplot(aes(x=Pos, y=Freq, group=Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+all_snps %>% 
+  filter(Chrom==2, Pos<100000) %>% 
+  ggplot(aes(x=Pos, y=Freq, group=Rep, colour = Rep)) +
+  geom_point() +
+  geom_line(alpha=0.5)
+
+summary(all_snps)
+```
+
+
