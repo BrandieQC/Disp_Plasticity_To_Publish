@@ -1,0 +1,178 @@
+---
+title: "Disp_Genetic_Analysis"
+author: "Brandie QC"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Analyzing the genetic data from the Close and Far dispersal trays
+
+To Do:
+
+-   Incorporate the Source populations
+
+-   Try computing the diversity metrics and FST using sliding windows so that I can get estimates of variation across the genome 
+
+-   Compare ecotype frequencies (did some ecotypes disperse better?)
+
+-   Figure out a way to test for bias in allele frequencies
+
+-   Only compare FST within blocks 
+
+## Libraries
+```{r}
+library(tidyverse)
+
+sem <- function(x, na.rm=FALSE) {           #for calculating standard error
+  sd(x,na.rm=na.rm)/sqrt(length(na.omit(x)))
+} 
+```
+
+## Load Sample Info
+```{r}
+sample_info <- read_csv("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/DispSamples.csv")
+head(sample_info)
+```
+
+## Load Genome-Wide Diversity
+
+Nucleotide diversity (theta_pi) - This quantifies the average number of differences (mismatches) between any pair of DNA sequences in a sample The higher this statistic, the more differences you will expect to see between any pair of randomly sampled DNA sequences.
+
+Watterson’s estimator (theta_w) - This quantifies the number of segregating sites within a sample, scaled by a constant. The higher this statistic, the more sites are found to be segregating (i.e., polymorphic).
+
+Tajima’s D (tajima_d) - This quantifies the difference between Watterson’s estimator and nucleotide diversity, and scales the result by a constant. This statistic is useful because it focuses not on the magnitude but on the architecture of diversity in a sample, compared to a neutrally evolving population of constant size. Negative values imply an excess of rare alleles, and positive values imply a deficit of rare alleles, relative to a population at equilibrium.
+```{r}
+genome_wide_diversity <- read_csv("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/diversity_genome.csv") 
+
+genome_wide_diversity_diagnostics <- genome_wide_diversity %>% 
+  select(total.masked:total.passed)
+genome_wide_diversity_diagnostics #3181529 SNPs
+
+genome_wide_diversity_short <- genome_wide_diversity %>% 
+  select(D03.theta_pi:D26.tajimas_d) %>% 
+  select(-contains("missing"), -contains("passed"), -contains("numeric"))
+
+genome_wide_thetapi <- genome_wide_diversity_short %>% 
+  select(contains("theta_pi")) %>% 
+  pivot_longer(
+    cols = ends_with("theta_pi"),
+    names_to = "PopID",
+    values_to = "Theta.Pi"
+  ) %>% 
+  mutate(PopID=str_remove(PopID, ".theta_pi"))
+
+genome_wide_thetawatterson <- genome_wide_diversity_short %>% 
+  select(contains("theta_watterson")) %>% 
+  pivot_longer(
+    cols = ends_with("theta_watterson"),
+    names_to = "PopID",
+    values_to = "Theta.Watterson"
+  ) %>% 
+  mutate(PopID=str_remove(PopID, ".theta_watterson"))
+
+genome_wide_tajimasd <- genome_wide_diversity_short %>% 
+  select(contains("tajimas_d")) %>% 
+  pivot_longer(
+    cols = ends_with("tajimas_d"),
+    names_to = "PopID",
+    values_to = "Tajimas.D"
+  ) %>% 
+  mutate(PopID=str_remove(PopID, ".tajimas_d"))
+
+genome_wide_diversity_long <- sample_info %>% 
+  left_join(genome_wide_thetapi) %>% 
+  left_join(genome_wide_thetawatterson) %>% 
+  left_join(genome_wide_tajimasd)
+```
+
+### Plots with all dispersal trays 
+```{r}
+genome_wide_diversity_long %>% 
+  ggplot(aes(x=fct_reorder(PopID, Theta.Pi), y=Theta.Pi, group = Treatment, fill=Treatment)) +
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  theme_classic() + labs(x="Dispersal Tray", fill="Distance") +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values=c("#298B8A", "#B4A7E1")) 
+genome_wide_diversity_long %>% 
+  ggplot(aes(x=fct_reorder(PopID, Theta.Watterson), y=Theta.Watterson, group = Treatment, fill=Treatment)) +
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  theme_classic() + labs(x="Dispersal Tray", fill="Distance") +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values=c("#298B8A", "#B4A7E1")) 
+genome_wide_diversity_long %>% 
+  ggplot(aes(x=fct_reorder(PopID, Tajimas.D), y=Tajimas.D, group = Treatment, fill=Treatment)) +
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  theme_classic() + labs(x="Dispersal Tray", fill="Distance") +
+  scale_fill_manual(values=c("#298B8A", "#B4A7E1")) 
+```
+
+### Summarize by Distance
+```{r}
+genome_wide_diversity_summary <- genome_wide_diversity_long %>% 
+  group_by(Treatment) %>% 
+  summarise(meanTheta.Pi=mean(Theta.Pi), 
+            meanTheta.Watterson=mean(Theta.Watterson),
+            meanTajimas.D=mean(Tajimas.D))
+genome_wide_diversity_summary
+
+genome_wide_diversity_summary %>% 
+  ggplot(aes(x=Treatment, y=meanTheta.Pi, fill=Treatment)) +
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  theme_classic() + #labs(x="Dispersal Tray", fill="Distance") +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values=c("#298B8A", "#B4A7E1")) 
+
+genome_wide_diversity_summary %>% 
+  ggplot(aes(x=Treatment, y=meanTheta.Watterson, fill=Treatment)) +
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  theme_classic() + #labs(x="Dispersal Tray", fill="Distance") +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values=c("#298B8A", "#B4A7E1")) 
+
+genome_wide_diversity_summary %>% 
+  ggplot(aes(x=Treatment, y=meanTajimas.D, fill=Treatment)) +
+  geom_col(width=0.7, position=position_dodge(0.8)) + 
+  theme_classic() + #labs(x="Dispersal Tray", fill="Distance") +
+  scale_fill_manual(values=c("#298B8A", "#B4A7E1")) 
+```
+
+## Genome-Wide FST
+```{r}
+genome_wide_FST <- read_csv("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/fst_genome.csv") 
+genome_wide_FST
+
+genome_wide_FST_list <- read_csv("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/fst-list_genome.csv")
+head(genome_wide_FST_list)
+
+genome_wide_FST_matrix <- read_csv("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/fst-matrix_genome.csv")
+genome_wide_FST_matrix
+
+genome_wide_FST_comp_types <- genome_wide_FST_list %>% 
+  select(Pop1=first, Pop2=second, fst) %>% 
+  mutate(Pop1_Dist=if_else(Pop1=="D07" | Pop1=="D08" | Pop1=="D21" | Pop1=="D22", "Far", "Close"),
+         Pop2_Dist=if_else(Pop2=="D07" | Pop2=="D08" | Pop2=="D21" | Pop2=="D22", "Far", "Close"),
+         Comparison_Type=if_else(Pop1_Dist=="Close" & Pop2_Dist=="Close", "Close-Close",
+                                 if_else(Pop1_Dist=="Far" & Pop2_Dist=="Far", "Far-Far", "Close-Far")))
+
+genome_wide_FST_comp_types %>% 
+  ggplot(aes(x=Comparison_Type, y=fst)) +
+  geom_boxplot()
+
+genome_wide_FST_comp_types_summary <- genome_wide_FST_comp_types %>% 
+  group_by(Comparison_Type) %>% 
+  summarise(meanFst=mean(fst), semFst=sem(fst))
+genome_wide_FST_comp_types_summary
+genome_wide_FST_comp_types_summary %>% 
+  ggplot(aes(x=fct_reorder(Comparison_Type, meanFst), y=meanFst)) +
+  geom_col(width = 0.7, position = position_dodge(0.8)) + 
+  geom_errorbar(aes(ymin=meanFst-semFst, ymax=meanFst+semFst), width=.2, position = position_dodge(0.8)) + 
+  labs(x="Comparison Type", y="Avg Genome-Wide FST") +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() 
+```
