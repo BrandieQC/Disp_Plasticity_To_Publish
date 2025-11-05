@@ -27,7 +27,7 @@ Next steps From KD:
 
 2.  Determine whether the source/near versus far samples differ in allele freq at specific loci across the genome (Fst). If so, that would identify alleles that occur more in dispersed pops (bias). I think this would be a comparison between pairs to begin, rather than all possible trays. If you identify potential loci, then you could calculate the allele freq at that locus in all pops and compare between far and source using all pops, but there would be low power. If you DO find something, though that would be very convincing. There are probably more powerful ways to test for allele-freq diffs
 
-3.  While far more challenging, it would be good to look at Moi's code to see whether you can identify ecotypes that have been dispersed, and compare the frequency of those ecotypes between source/near versus far trays--another metric of "bias". Same concerns as in b.
+3.  While far more challenging, it would be good to look at Moi's code to see whether you can identify ecotypes that have been dispersed, and compare the frequency of those ecotypes between source/near versus far trays--another metric of "bias". Same concerns as in b. (Note: for this, we would need to get the actual ecotype freqs for the sources, right now we just have the ecotype freq difference from the founders)
 
 Block Info:
 
