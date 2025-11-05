@@ -32,14 +32,14 @@ get_legend<-function(myggplot){
 
 ### Load the data
 ```{r}
-xhdensity <- read.csv("XHDensityData.csv")
+xhdensity <- read.csv("../input/XHDensityData.csv")
 head(xhdensity)
 ```
 
 ### Height correction 
 ```{r}
 xhdensity_noheight <- xhdensity %>% select(ID, Geno, Genotype, SizeRE, SizeOrig, PotPlug, Chamber, Tray, Density, Season, MatFr, ImmFr, Flowers, BasBr, PrimBr, TotBr, FailedFr, LeafNum, Diam)
-xhheight_cor <- read.csv("XH_HeightCorrection.csv")
+xhheight_cor <- read.csv("../input/XH_HeightCorrection.csv")
 xhdensity_corheight <- merge(xhdensity_noheight, xhheight_cor)
 head(xhdensity_corheight)
 #write.csv(xhdensity_corheight, "~/Documents/Duke/Lab/Dispersal Trays/XHDensity_CorHeight.csv", row.names = FALSE)
@@ -256,8 +256,7 @@ ggsave("XHDensHeight.png", width=16, height=6, units="in")
 
 
 ## Genetic Variance
-```{r, eval=FALSE}
-head(xhdensity_corheight)
+```{r}
 geno_leafnmeans <- xhdensity_corheight_disp  %>% filter(!is.na(LeafNum)) %>% group_by(Geno, Density) %>% summarise(GenoMeanLeaf=mean(LeafNum)) 
 geno_leafnmeans
 geno_leafnmeans_var <- geno_leafnmeans %>% group_by(Density) %>% summarise(GenoVarLeaf=var(GenoMeanLeaf))
@@ -276,7 +275,7 @@ geno_reptraitsmeans_var
 ```
 
 ## Genetic covariances
-```{r, eval=FALSE}
+```{r}
 geno_leafnmeans
 geno_diammeans
 geno_sizeatrep <- merge(geno_leafnmeans, geno_diammeans)
