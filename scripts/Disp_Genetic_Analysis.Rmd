@@ -15,15 +15,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 To Do:
 
--   Incorporate the Source populations
-
 -   Try computing the diversity metrics and FST using sliding windows so that I can get estimates of variation across the genome
 
 -   Compare ecotype frequencies (did some ecotypes disperse better?)
 
 -   Figure out a way to test for bias in allele frequencies
-
--   Only compare FST within blocks
 
 Next steps From KD:
 
