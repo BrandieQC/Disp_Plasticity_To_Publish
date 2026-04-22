@@ -15,17 +15,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 To Do:
 
--   Try computing the diversity metrics and FST using sliding windows so that I can get estimates of variation across the genome
-
 -   Compare ecotype frequencies (did some ecotypes disperse better?)
 
 -   Figure out a way to test for bias in allele frequencies
 
 Next steps From KD:
 
-1.  Compare genetic diversity in dispersed versus non-dispersed samples (source versus far, and near versus far)
+1.  Compare genetic diversity in dispersed versus non-dispersed samples (source versus far, and near versus far) - Done (see below)
 
-2.  Determine whether the source/near versus far samples differ in allele freq at specific loci across the genome (Fst). If so, that would identify alleles that occur more in dispersed pops (bias). I think this would be a comparison between pairs to begin, rather than all possible trays. If you identify potential loci, then you could calculate the allele freq at that locus in all pops and compare between far and source using all pops, but there would be low power. If you DO find something, though that would be very convincing. There are probably more powerful ways to test for allele-freq diffs
+2.  Determine whether the source/near versus far samples differ in allele freq at specific loci across the genome (Fst). If so, that would identify alleles that occur more in dispersed pops (bias). I think this would be a comparison between pairs to begin, rather than all possible trays. If you identify potential loci, then you could calculate the allele freq at that locus in all pops and compare between far and source using all pops, but there would be low power. If you DO find something, though that would be very convincing. There are probably more powerful ways to test for allele-freq diffs - Tried this using sliding window FSTs, in block 4 there do seem to be some regions with FST between close/source and far trays. 
 
 3.  While far more challenging, it would be good to look at Moi's code to see whether you can identify ecotypes that have been dispersed, and compare the frequency of those ecotypes between source/near versus far trays--another metric of "bias". Same concerns as in b. (Note: for this, we would need to get the actual ecotype freqs for the sources, right now we just have the ecotype freq difference from the founders)
 
@@ -207,6 +205,117 @@ genome_wide_diversity_summary %>%
   scale_fill_manual(values=c("#298B8A", "#B4A7E1", "#E69F00"))
 ```
 
+## Sliding Window Diversity
+```{r}
+sliding_window_diversity <- read_csv("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/diversity_slidewndw.csv")
+
+sliding_window_diversity_diagnostics <- sliding_window_diversity %>% 
+  select(chrom:total.passed)
+sliding_window_diversity_diagnostics #3230 windows of 1000 SNPs
+
+sliding_window_diversity_short <- sliding_window_diversity %>% 
+  select(chrom:end, D03.theta_pi:S17.tajimas_d) %>% 
+  select(-contains("missing"), -contains("passed"), -contains("numeric"))
+
+sliding_window_thetapi <- sliding_window_diversity_short %>% 
+  select(chrom:end, contains("theta_pi")) %>% 
+  pivot_longer(
+    cols = ends_with("theta_pi"),
+    names_to = "PopID",
+    values_to = "Theta.Pi"
+  ) %>% 
+  mutate(PopID=str_remove(PopID, ".theta_pi"))
+
+sliding_window_thetawatterson <- sliding_window_diversity_short %>% 
+  select(chrom:end, contains("theta_watterson")) %>% 
+  pivot_longer(
+    cols = ends_with("theta_watterson"),
+    names_to = "PopID",
+    values_to = "Theta.Watterson"
+  ) %>% 
+  mutate(PopID=str_remove(PopID, ".theta_watterson"))
+
+sliding_window_tajimasd <- sliding_window_diversity_short %>% 
+  select(chrom:end, contains("tajimas_d")) %>% 
+  pivot_longer(
+    cols = ends_with("tajimas_d"),
+    names_to = "PopID",
+    values_to = "Tajimas.D"
+  ) %>% 
+  mutate(PopID=str_remove(PopID, ".tajimas_d"))
+
+sliding_window_diversity_long <- sample_info %>% 
+  left_join(sliding_window_thetapi) %>% 
+  left_join(sliding_window_thetawatterson) %>% 
+  left_join(sliding_window_tajimasd) %>% 
+  unite("Pos", chrom:end, remove = FALSE)
+```
+
+### Plots with all dispersal trays
+
+```{r}
+sliding_window_diversity_long %>% 
+  ggplot(aes(x=start, y=Theta.Pi, group = Treatment, color=Treatment)) +
+  geom_line(alpha=0.7) +
+  theme_classic() + labs(x="Chrom_Window_Start", color="Distance") +
+  scale_colour_manual(values=c("#298B8A", "#B4A7E1", "#E69F00")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+
+sliding_window_diversity_long %>% 
+  ggplot(aes(x=start, y=Theta.Watterson, group = Treatment, color=Treatment)) +
+  geom_line(alpha=0.7) +
+  theme_classic() + labs(x="Chrom_Window_Start", color="Distance") +
+  scale_colour_manual(values=c("#298B8A", "#B4A7E1", "#E69F00")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+
+sliding_window_diversity_long %>% 
+  ggplot(aes(x=start, y=Tajimas.D, group = Treatment, color=Treatment)) +
+  geom_line(alpha=0.7) +
+  theme_classic() + labs(x="Chrom_Window_Start", color="Distance") +
+  scale_colour_manual(values=c("#298B8A", "#B4A7E1", "#E69F00")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+```
+
+### Summarize by Distance
+
+```{r}
+sliding_window_diversity_summary <- sliding_window_diversity_long %>% 
+  group_by(Pos, start, chrom, Treatment) %>% 
+  summarise(meanTheta.Pi=mean(Theta.Pi), 
+            meanTheta.Watterson=mean(Theta.Watterson),
+            meanTajimas.D=mean(Tajimas.D))
+sliding_window_diversity_summary
+
+sliding_window_diversity_summary %>% 
+  ggplot(aes(x=start, y=meanTheta.Pi, group = Treatment, color=Treatment)) +
+  geom_line(alpha=0.7) +
+  theme_classic() + labs(x="Chrom_Window_Start", color="Distance") +
+  scale_colour_manual(values=c("#298B8A", "#B4A7E1", "#E69F00")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+
+sliding_window_diversity_summary %>% 
+  ggplot(aes(x=start, y=meanTheta.Watterson, group = Treatment, color=Treatment)) +
+  geom_line(alpha=0.7) + 
+  theme_classic() + labs(x="Chrom_Window_Start", color="Distance") +
+  scale_colour_manual(values=c("#298B8A", "#B4A7E1", "#E69F00")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+#The higher this statistic, the more sites are found to be segregating (i.e., polymorphic).
+
+sliding_window_diversity_summary %>% 
+  ggplot(aes(x=start, y=meanTajimas.D, group = Treatment, color=Treatment)) +
+  geom_line(alpha=0.7) +
+  theme_classic() + labs(x="Chrom_Window_Start", color="Distance") +
+  scale_colour_manual(values=c("#298B8A", "#B4A7E1", "#E69F00")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+#Negative values imply an excess of rare alleles
+```
+
 ## Genome-Wide FST
 
 ```{r}
@@ -262,6 +371,173 @@ genome_wide_FST_summary %>%
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_wrap(~Pop1_Block)
+```
 
+## Sliding Window FST
+```{r}
+sliding_window_FST <- read_csv("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/fst_slidewndw.csv")
+head(sliding_window_FST)
 
+sliding_window_FST_short <- sliding_window_FST %>% 
+  select(chrom:end, `D03:D06.fst`:`S16:S17.fst`) %>% 
+  select(-contains("missing"), -contains("passed"), -contains("numeric"))
+head(sliding_window_FST_short)
+
+sliding_window_FST <- sliding_window_FST_short %>% 
+  unite("Pos", chrom:end, remove = FALSE) %>% 
+  pivot_longer(
+    cols = ends_with("fst"),
+    names_to = "Pops",
+    values_to = "FST"
+  ) %>% 
+  mutate(Pops=str_remove(Pops, ".fst"))
+head(sliding_window_FST)
+
+sliding_window_FST_comp_types <- sliding_window_FST %>% 
+  separate(Pops, c("Pop1", "Pop2"), sep=":") %>% 
+  mutate(Pop1_Dist=if_else(str_detect(Pop1, "S"), "Source", #assign pop distances
+                           if_else(Pop1=="D07" | Pop1=="D08" | Pop1=="D21" | Pop1=="D22", "Far", "Close")),
+         Pop2_Dist=if_else(str_detect(Pop2,"S"), "Source",  #assign pop distances
+                           if_else(Pop2=="D07" | Pop2=="D08" | Pop2=="D21" | Pop2=="D22", "Far", "Close")),
+         Comparison_Type=if_else(Pop1_Dist=="Close" & Pop2_Dist=="Close", "Close-Close", #assign comparison types 
+                         if_else(Pop1_Dist=="Far" & Pop2_Dist=="Far", "Far-Far", 
+                         if_else(Pop1_Dist=="Source" & Pop2_Dist=="Source", "Source-Source",
+                         if_else(Pop1_Dist=="Source" & Pop2_Dist=="Close", "Source-Close",    
+                         if_else(Pop1_Dist=="Source" & Pop2_Dist=="Far", "Source-Far",
+                         if_else(Pop1_Dist=="Close" & Pop2_Dist=="Source", "Source-Close",
+                         if_else(Pop1_Dist=="Far" & Pop2_Dist=="Source", "Source-Far", "Close-Far"))))))))
+
+sliding_window_FST_SAMEBLOCKS <- sliding_window_FST_comp_types %>% 
+  left_join(sample_info, by=join_by(Pop1==PopID)) %>% #add in block info 
+  select(Pos:Comparison_Type, Pop1_Block=Block) %>% 
+  left_join(sample_info, by=join_by(Pop2==PopID)) %>% #add in block info  
+  select(Pos:Comparison_Type, Pop1_Block, Pop2_Block=Block) %>% 
+  mutate(Same_Block=if_else(Pop1_Block==Pop2_Block, TRUE, FALSE)) %>% 
+  filter(Same_Block==TRUE) #only keep comparisons within the same block 
+
+sliding_window_FST_SAMEBLOCKS %>% 
+  ggplot(aes(x=Comparison_Type, y=FST)) +
+  geom_boxplot()
+
+sliding_window_FST_summary <- sliding_window_FST_SAMEBLOCKS %>% 
+  group_by(Pos, start, chrom, Comparison_Type, Pop1_Block) %>% 
+  summarise(meanFst=mean(FST), semFst=sem(FST))
+head(sliding_window_FST_summary)
+
+sliding_window_FST_summary %>% 
+  ggplot(aes(x=start, y=meanFst, group=Comparison_Type, color=Comparison_Type)) +
+  geom_line(alpha=0.7) +
+  #geom_errorbar(aes(ymin=meanFst-semFst, ymax=meanFst+semFst), 
+   #             width=.2) + 
+  labs(x="Chrom_Window_Start", y="Avg Window FST") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~chrom)
+
+sliding_window_FST_summary %>%
+  filter(Comparison_Type=="Source-Far" | 
+           Comparison_Type=="Close-Far" | 
+           Comparison_Type=="Source-Close") %>% 
+  ggplot(aes(x=start, y=meanFst, group=Comparison_Type, color=Comparison_Type)) +
+  geom_line(alpha=0.7) +
+  #geom_errorbar(aes(ymin=meanFst-semFst, ymax=meanFst+semFst), 
+   #             width=.2) + 
+  labs(x="Chrom_Window_Start", y="Avg Window FST") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~chrom)
+
+sliding_window_FST_summary %>%
+  filter(Comparison_Type=="Source-Far" | 
+           Comparison_Type=="Close-Far" | 
+           Comparison_Type=="Source-Close") %>% 
+  filter(Pop1_Block==1) %>% 
+  ggplot(aes(x=start, y=meanFst, group=Comparison_Type, color=Comparison_Type)) +
+  geom_line(alpha=0.7) +
+  #geom_errorbar(aes(ymin=meanFst-semFst, ymax=meanFst+semFst), 
+   #             width=.2) + 
+  labs(x="Chrom_Window_Start", y="Avg Window FST", title="Block 1") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+
+sliding_window_FST_summary %>%
+  filter(Comparison_Type=="Source-Far" | 
+           Comparison_Type=="Close-Far" | 
+           Comparison_Type=="Source-Close") %>% 
+  filter(Pop1_Block==2) %>% 
+  ggplot(aes(x=start, y=meanFst, group=Comparison_Type, color=Comparison_Type)) +
+  geom_line(alpha=0.7) +
+  #geom_errorbar(aes(ymin=meanFst-semFst, ymax=meanFst+semFst), 
+   #             width=.2) + 
+  labs(x="Chrom_Window_Start", y="Avg Window FST", title="Block 2") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+
+sliding_window_FST_summary %>%
+  filter(Comparison_Type=="Source-Far" | 
+           Comparison_Type=="Close-Far" | 
+           Comparison_Type=="Source-Close") %>% 
+  filter(Pop1_Block==3) %>% 
+  ggplot(aes(x=start, y=meanFst, group=Comparison_Type, color=Comparison_Type)) +
+  geom_line(alpha=0.7) +
+  #geom_errorbar(aes(ymin=meanFst-semFst, ymax=meanFst+semFst), 
+   #             width=.2) + 
+  labs(x="Chrom_Window_Start", y="Avg Window FST", title="Block 3") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+
+sliding_window_FST_summary %>%
+  filter(Comparison_Type=="Source-Far" | 
+           Comparison_Type=="Close-Far" | 
+           Comparison_Type=="Source-Close") %>% 
+  filter(Pop1_Block==4) %>% 
+  ggplot(aes(x=start, y=meanFst, group=Comparison_Type, color=Comparison_Type)) +
+  geom_line(alpha=0.7) +
+  #geom_errorbar(aes(ymin=meanFst-semFst, ymax=meanFst+semFst), 
+   #             width=.2) + 
+  labs(x="Chrom_Window_Start", y="Avg Window FST", title="Block 4") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    facet_wrap(~chrom)
+```
+
+## Ecotype Frequency Diffs (Close vs Far)
+```{r}
+sample_info %>% arrange(Block, Treatment)
+
+##Block 1 Pilot
+D03_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D03_ecotype_frequency.txt",
+                           col_names = c("Ecotype", "D03_Freq")) 
+head(D03_ecotypes)
+
+D06_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D06_ecotype_frequency.txt",
+                           col_names = c("Ecotype", "D06_Freq")) 
+head(D06_ecotypes)
+
+D07_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/D07_ecotype_frequency.txt",
+                           col_names = c("Ecotype", "D07_Freq")) 
+head(D07_ecotypes)
+
+block1_ecotypes <- D03_ecotypes %>% 
+  left_join(D06_ecotypes) %>% 
+  left_join(D07_ecotypes) %>% 
+  mutate(D07_D03=D07_Freq-D03_Freq,
+         D07_D06=D07_Freq-D06_Freq)
+head(block1_ecotypes)
+summary(block1_ecotypes)
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D07_D03)) +
+  geom_point() + theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D07_D06)) +
+  geom_point() + theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
