@@ -185,6 +185,17 @@ xhMatFr_summary_fig2 <- xhreptraits_summary_bind %>%
   geom_point(data = xhreptraits_summary2_unite, size=0.8) +
   facet_grid(. ~Season)
 ggsave("For Publication/output/XHDensMatFr_NoAvg.png", width=16, height=6, units="in")
+
+xhMatFr_summary_fig2 <- xhreptraits_summary_bind %>% 
+  filter(DispGeno != "Average") %>%
+  ggplot(aes(x=Density, y=meanMatFr, group=DispGeno, color=Disp)) + 
+  geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanMatFr-SEMF, ymax=meanMatFr+SEMF), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Mature Fruit Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_2) +
+  facet_grid(. ~Season)
+ggsave("../output/XHDensMatFr_NoGenos.png", width=16, height=6, units="in")
 ```
 
 ### Basal Branches
@@ -211,6 +222,17 @@ xhBB_summary_fig2 <- xhreptraits_summary_bind %>%
   geom_point(data = xhreptraits_summary2_unite, size=0.8) +
   facet_grid(. ~Season)
 ggsave("For Publication/output/XH_BB_NoAvg.png", width=16, height=6, units="in")
+
+xhBB_summary_fig2 <- xhreptraits_summary_bind %>% 
+   filter(DispGeno != "Average") %>%
+  ggplot(aes(x=Density, y=meanBB, group=DispGeno, color=Disp)) + 
+  geom_point(size=3.5) + geom_line(size=2) +
+  geom_errorbar(aes(ymin=meanBB-SEBB, ymax=meanBB+SEBB), width=.2) +
+  labs(color="Dispersal") +
+  theme_classic() + xlab("Density") + ylab("Basal Branch Number") + theme(text=element_text(size=35)) +
+  scale_colour_manual(values=ch1Palette_2) +
+  facet_grid(. ~Season)
+ggsave("../output/XH_BB_NoGenos.png", width=16, height=6, units="in")
 ```
 
 ### Primary Branches 
