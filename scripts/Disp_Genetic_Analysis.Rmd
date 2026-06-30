@@ -563,7 +563,13 @@ block1_ecotypes <- D03_ecotypes %>%
          D07_D06=D07_Freq-D06_Freq,
          D07_S02=D07_Freq-S02_Freq,
          D07_S03=D07_Freq-S03_Freq,
-         D07_S06=D07_Freq-S06_Freq)
+         D07_S06=D07_Freq-S06_Freq,
+         D03_S02=D03_Freq-S02_Freq,
+         D03_S03=D03_Freq-S03_Freq,
+         D03_S06=D03_Freq-S06_Freq,
+         D06_S02=D06_Freq-S02_Freq,
+         D06_S03=D06_Freq-S03_Freq,
+         D06_S06=D06_Freq-S06_Freq)
 head(block1_ecotypes)
 summary(block1_ecotypes)
 
@@ -571,29 +577,76 @@ block1_ecotypes %>%
   mutate(Ecotype=as.character(Ecotype)) %>% 
   ggplot(aes(x=Ecotype, y=D07_D03)) +
   geom_point() + theme_classic() +
+  ggtitle("Far - Close Ecotype Freqs") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 block1_ecotypes %>% 
   mutate(Ecotype=as.character(Ecotype)) %>% 
   ggplot(aes(x=Ecotype, y=D07_D06)) +
   geom_point() + theme_classic() +
+  ggtitle("Far - Close Ecotype Freqs") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 block1_ecotypes %>% 
   mutate(Ecotype=as.character(Ecotype)) %>% 
   ggplot(aes(x=Ecotype, y=D07_S02)) +
   geom_point() + theme_classic() +
+  ggtitle("Far - Source Ecotype Freqs") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 block1_ecotypes %>% 
   mutate(Ecotype=as.character(Ecotype)) %>% 
   ggplot(aes(x=Ecotype, y=D07_S03)) +
   geom_point() + theme_classic() +
+  ggtitle("Far - Source Ecotype Freqs") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 block1_ecotypes %>% 
   mutate(Ecotype=as.character(Ecotype)) %>% 
   ggplot(aes(x=Ecotype, y=D07_S06)) +
   geom_point() + theme_classic() +
+  ggtitle("Far - Source Ecotype Freqs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D03_S02)) +
+  geom_point() + theme_classic() +
+  ggtitle("Close - Source Ecotype Freqs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D03_S03)) +
+  geom_point() + theme_classic() +
+  ggtitle("Close - Source Ecotype Freqs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D03_S06)) +
+  geom_point() + theme_classic() +
+  ggtitle("Close - Source Ecotype Freqs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D06_S02)) +
+  geom_point() + theme_classic() +
+  ggtitle("Close - Source Ecotype Freqs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D06_S03)) +
+  geom_point() + theme_classic() +
+  ggtitle("Close - Source Ecotype Freqs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D06_S06)) +
+  geom_point() + theme_classic() +
+  ggtitle("Close - Source Ecotype Freqs") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
