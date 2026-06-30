@@ -91,6 +91,37 @@ tail(source_snps_IDs_pos)
 write_delim(source_snps_IDs_pos, "../../Analyzing Genetic Data/DispersalTraps/hapFire_Results/SNPs_to_analyze/SourcePops_snp_frequency.txt", delim = "\t")
 ```
 
+## Ecotype Info for the Source Pops
+```{r}
+source_ecotypes <- read_delim("../../Analyzing Genetic Data/GrENE-net_DataAnalyses_Science/merged_ecotype_frequency.txt") #from the GrENEnet zenodo: https://zenodo.org/records/15360669
+source_ecotypes %>% pivot_longer(everything(), names_to = "SampleID", values_to = "Freq") %>% filter(str_detect(SampleID, "28_")) %>% select(SampleID) %>% distinct()
+#this only has subpops 2, 4, 6, 8, 17 for gen 1 
+
+founder_ecotypes <- read_delim("../../Analyzing Genetic Data/GrENE-net_DataAnalyses_Science/founder_ecotype_frequency.txt", col_names = FALSE) %>% #from the GrENEnet zenodo: https://zenodo.org/records/15360669
+  rename("Ecotype"="X1", "Founder_Freq"="X2")
+
+source_ecotypes_delta <- read_delim("../../Analyzing Genetic Data/GrENE-net Cages/site28_delta_ecotype_freq.txt") %>% #sent by Xing 
+  select(`28_1_2`:`28_1_4`, `28_1_6`:`28_1_8`, `28_1_11`:`28_1_13`, `28_1_15`:`28_1_17`)
+
+source_ecotypes_calc <- founder_ecotypes %>% 
+  bind_cols(source_ecotypes_delta) %>% 
+  mutate(S02_Freq=`28_1_2`+Founder_Freq,
+         S03_Freq=`28_1_3`+Founder_Freq,
+         S04_Freq=`28_1_4`+Founder_Freq,
+         S06_Freq=`28_1_6`+Founder_Freq,
+         S07_Freq=`28_1_7`+Founder_Freq,
+         S08_Freq=`28_1_8`+Founder_Freq,
+         S11_Freq=`28_1_11`+Founder_Freq,
+         S12_Freq=`28_1_12`+Founder_Freq,
+         S13_Freq=`28_1_13`+Founder_Freq,
+         S15_Freq=`28_1_15`+Founder_Freq,
+         S16_Freq=`28_1_16`+Founder_Freq,
+         S17_Freq=`28_1_17`+Founder_Freq) %>%  #calculate source freqs from delta and founder freq  
+  select(Ecotype, Founder_Freq, S02_Freq:S17_Freq)
+head(source_ecotypes_calc)
+write_csv(source_ecotypes_calc, "../../Analyzing Genetic Data/DispersalTraps/Source_Ecotype_Freqs.csv")
+```
+
 ## Load Sample Info
 
 ```{r}
@@ -521,11 +552,18 @@ D07_ecotypes <- read_delim("../../Analyzing Genetic Data/DispersalTraps/hapFire_
                            col_names = c("Ecotype", "D07_Freq")) 
 head(D07_ecotypes)
 
+block1_sources_ecotypes <- source_ecotypes_calc %>% 
+  select(Ecotype, S02_Freq, S03_Freq, S06_Freq)
+
 block1_ecotypes <- D03_ecotypes %>% 
   left_join(D06_ecotypes) %>% 
   left_join(D07_ecotypes) %>% 
+  left_join(block1_sources_ecotypes) %>% 
   mutate(D07_D03=D07_Freq-D03_Freq,
-         D07_D06=D07_Freq-D06_Freq)
+         D07_D06=D07_Freq-D06_Freq,
+         D07_S02=D07_Freq-S02_Freq,
+         D07_S03=D07_Freq-S03_Freq,
+         D07_S06=D07_Freq-S06_Freq)
 head(block1_ecotypes)
 summary(block1_ecotypes)
 
@@ -538,6 +576,24 @@ block1_ecotypes %>%
 block1_ecotypes %>% 
   mutate(Ecotype=as.character(Ecotype)) %>% 
   ggplot(aes(x=Ecotype, y=D07_D06)) +
+  geom_point() + theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D07_S02)) +
+  geom_point() + theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D07_S03)) +
+  geom_point() + theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+block1_ecotypes %>% 
+  mutate(Ecotype=as.character(Ecotype)) %>% 
+  ggplot(aes(x=Ecotype, y=D07_S06)) +
   geom_point() + theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
